@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Optional
 
 import numpy as np
 from scipy.ndimage import convolve
@@ -9,9 +9,11 @@ import matplotlib.pyplot as plt
 
 # Kernel to compute the number of surrounding apples - not the same as in DM paper
 NEIGHBOR_KERNEL = np.array([
-    [1, 1, 1],
-    [1, 0, 1],
-    [1, 1, 1]
+    [0, 0, 1, 0, 0],
+    [0, 1, 1, 1, 0],
+    [1, 1, 0, 1, 1],
+    [0, 1, 1, 1, 0],
+    [0, 0, 1, 0, 0]
 ])
 
 DIRECTIONS = [
@@ -32,6 +34,7 @@ Position = Tuple[int, int]
 class Agent:
     pos: Position
     rot: int
+    frozen: int = 0
 
 
 def in_bounds(pos: Position,
@@ -116,7 +119,10 @@ class HarvestEnv:
                  num_agents: int,
                  size: Position,
                  init_prob: float = 0.1,
-                 regen_prob: float = 0.01):
+                 regen_prob: float = 0.01,
+                 peripheral: Optional[int] = None,
+                 depth_perception: Optional[int] = None
+    ):
 
         self.size = size
         self.init_prob = init_prob
@@ -126,6 +132,17 @@ class HarvestEnv:
 
         self.num_agents = num_agents
         self.agents = {}
+
+        if not peripheral:
+            self.peripheral = max(1, max(*size) // 5)
+        else:
+            self.peripheral = peripheral
+        if not depth_perception:
+            self.depth_perception = max(4, int(max(*size) // (5 / 4)))
+        else:
+            self.depth_perception = depth_perception
+
+        self.reputation = np.zeros((num_agents,))
 
         self.reset()
 
@@ -173,6 +190,9 @@ class HarvestEnv:
     def _process_action(self, agent: Agent, action: int):
         """Processes a single action for a single agent"""
         (x, y), rot = agent.pos, agent.rot
+        if agent.frozen > 0:
+            agent.frozen -= 1
+            return None
         if action == 0:
             # Go forward
             (dx, dy) = DIRECTIONS[rot]
@@ -201,17 +221,54 @@ class HarvestEnv:
             self._rotate_agent(agent, 1)
         elif action == 6:
             # Shoot a beam, to implement
-            pass
+            affected_agents = self._get_affected_agents(agent)
+            for _agent in affected_agents:
+                _agent.frozen = 25
         elif action == 7:
             # No-op
             pass
 
     def _get_affected_agents(self, agent: Agent, length: int = 6, width: int = 10) -> List[Agent]:
         """Returns a list of agents caught in the ray"""
-        pass
-
+        if agent.rot == 0: # north
+            ys = np.arange(agent.pos[1], max(0, agent.pos[1] - self.depth_perception), -1)
+            beam = [(agent.pos[0], y) for y in ys]
+        elif agent.rot == 1: # east
+            xs = np.arange(agent.pos[0], min(self.size[0], agent.pos[0] + self.depth_perception))
+            beam = [(x, agent.pos[1]) for x in xs]
+        elif agent.rot == 2: # south
+            ys = np.arange(agent.pos[1], min(self.size[1], agent.pos[1] + self.depth_perception))
+            beam = [(agent.pos[0], y) for y in ys]
+        elif agent.rot == 3: # west
+            xs = np.arange(agent.pos[0], max(0, agent.pos[0] + self.depth_perception), -1)
+            beam = [(x, agent.pos[1]) for x in xs]
+        else:
+            raise ValueError("agent.rot must be % 4")
+        return [ag for _, ag in self.agents.items() if ag.pos in beam]
 
     def _agent_obs(self, agent: Agent) -> np.ndarray:
-        pass
-
-
+        x_max, y_max = self.size
+        x, y = agent.pos
+        if agent.rot == 0: # facing north
+            window_left = max(0, x - self.peripheral)
+            window_right = min(x_max, x + self.peripheral)
+            window_bottom = y
+            window_top = min(y_max, y + self.depth_perception)
+        elif agent.rot == 1: # facing east
+            window_left = x
+            window_right = min(x_max, x + self.depth_perception)
+            window_bottom = min(y_max, y + self.peripheral)
+            window_top = max(0, y - self.peripheral)
+        elif agent.rot == 2: # facing south
+            window_left = max(0, x - self.peripheral)
+            window_right = min(x_max, x + self.peripheral)
+            window_bottom = max(y_max, y + self.depth_perception)
+            window_top = y
+        elif agent.rot == 3: # facing west
+            window_left = max(0, x - self.depth_perception)
+            window_right = x
+            window_bottom = max(0, y - self.peripheral)
+            window_top = min(y_max, y + self.peripheral)
+        else:
+            raise ValueError("agent.rot must be % 4")
+        return self.board[window_left:window_right, window_top:window_bottom]
