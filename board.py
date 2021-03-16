@@ -234,7 +234,8 @@ class HarvestEnv:
             affected_agents = self._get_affected_agents(agent)
             for _agent in affected_agents:
                 _agent.frozen = 25
-            self.reputation[agent] += 1
+            self.reputation[agent] += 1 # TODO: figure out why this isn't working as expected
+            # see notebook for weird results
         elif action == 7:
             # No-op
             pass
@@ -258,7 +259,10 @@ class HarvestEnv:
         return [ag for _, ag in self.agents.items() if ag.pos in beam]
 
     def _agent_obs(self, agent: Agent) -> np.ndarray:
-        """The partial observability of the environment."""
+        """The partial observability of the environment.
+
+        TODO: this should have been TDD, so the TODO is to write some simple test cases and make sure they pass.
+        """
         x_max, y_max = self.size
         x, y = agent.pos
         if agent.rot == 0: # facing north
