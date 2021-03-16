@@ -136,14 +136,14 @@ class HarvestEnv:
             for i in range(self.num_agents)
         }
 
-        for agent, pos in self.agents.items():
-            self.board[pos] = 0
+        for name, agent in self.agents.items():
+            self.board[agent.pos] = 0
 
     def render(self, ax: plt.Axes):
         """Writes the image to a pyplot axes"""
         board = self.board[:]
-        for agent, pos in self.agents.items():
-            board[pos] = 2
+        for name, agent in self.agents.items():
+            board[agent.pos] = 2
         ax.cla()
         ax.imshow(board, cmap=cmap)
 
@@ -205,6 +205,11 @@ class HarvestEnv:
         elif action == 7:
             # No-op
             pass
+
+    def _get_affected_agents(self, agent: Agent, length: int = 6, width: int = 10) -> List[Agent]:
+        """Returns a list of agents caught in the ray"""
+        pass
+
 
     def _agent_obs(self, agent: Agent) -> np.ndarray:
         pass
