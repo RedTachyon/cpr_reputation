@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Tuple, List, Dict, Optional
+from collections import defaultdict
 
 import numpy as np
 from scipy.ndimage import convolve
@@ -29,13 +30,22 @@ cmap = mpl.colors.ListedColormap(['white', 'red', 'green'])
 Board = np.ndarray
 Position = Tuple[int, int]
 
-
-@dataclass
+@dataclass(unsafe_hash=True)
 class Agent:
     pos: Position
     rot: int
     frozen: int = 0
+#   def __init__(self, pos: Position, rot: int, frozen: int = 0):
+#       self.start_pos = self.pos = pos
+#       self.rot = rot
+#       self.frozen = frozen
+#       self.random_for_hash = np.random.randint(2 ** 2 ** 2 ** 2)
+#
+#   def __hash__(self) -> int:
+#       return hash(f"{self.start_pos}{self.random_for_hash}{repr(self)}")
 
+    def __repr__(self) -> str:
+        return f"Agent(pos={self.pos}, frozen={self.frozen > 0})"
 
 def in_bounds(pos: Position,
               size: Position) -> bool:
@@ -142,7 +152,7 @@ class HarvestEnv:
         else:
             self.depth_perception = depth_perception
 
-        self.reputation = np.zeros((num_agents,))
+        self.reputation = defaultdict(int)
 
         self.reset()
 
@@ -220,10 +230,11 @@ class HarvestEnv:
             # Rotate right
             self._rotate_agent(agent, 1)
         elif action == 6:
-            # Shoot a beam, to implement
+            # Shoot a beam
             affected_agents = self._get_affected_agents(agent)
             for _agent in affected_agents:
                 _agent.frozen = 25
+            self.reputation[agent] += 1
         elif action == 7:
             # No-op
             pass
@@ -247,6 +258,7 @@ class HarvestEnv:
         return [ag for _, ag in self.agents.items() if ag.pos in beam]
 
     def _agent_obs(self, agent: Agent) -> np.ndarray:
+        """The partial observability of the environment."""
         x_max, y_max = self.size
         x, y = agent.pos
         if agent.rot == 0: # facing north
