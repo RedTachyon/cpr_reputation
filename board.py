@@ -286,66 +286,55 @@ class HarvestGame:
             new_pos = (x, y)
 
         new_x, new_y = new_pos[0], new_pos[1]
-        if self.board[new_x][new_y]:  # apple in new cell
-            self.board[new_x][new_y] = 0
+        if self.board[new_y][new_x]:  # apple in new cell
+            self.board[new_y][new_x] = 0
             return 1
         else:  # no apple in new cell
             return 0
 
-    def get_affected_agents(self, agent_id: str, beam_length: int = 6, beam_width: int = 10) -> List[Walker]:
+    def get_affected_agents(self, agent_id: str) -> List[Walker]:
         """Returns a list of agents caught in the ray"""
-        # TODO: include the width and length of the beam
+        (x0, y0), (x1, y1) = self.get_observable_window(agent_id)
+        return [ag for _, ag in self.agents.items()
+                if x0 <= ag.pos[0] <= x1
+                and y0 <= ag.pos[1] <= y1]
+
+    def get_observable_window(self, agent_id: str) -> List[Position]:
+        """Returns indices of the (top left, bottom right) (inclusive) boundaries of an agent's vision."""
+        x_max = self.size[1] - 1
+        y_max = self.size[0] - 1
         agent = self.agents[agent_id]
-        if agent.rot == 0:  # north
-            ys = np.arange(agent.pos[1], max(0, agent.pos[1] - self.sight_dist), -1)
-            beam = [(agent.pos[0], y) for y in ys]
-        elif agent.rot == 1:  # east
-            xs = np.arange(agent.pos[0], min(self.size[0], agent.pos[0] + self.sight_dist))
-            beam = [(x, agent.pos[1]) for x in xs]
-        elif agent.rot == 2:  # south
-            ys = np.arange(agent.pos[1], min(self.size[1], agent.pos[1] + self.sight_dist))
-            beam = [(agent.pos[0], y) for y in ys]
-        elif agent.rot == 3:  # west
-            xs = np.arange(agent.pos[0], max(0, agent.pos[0] + self.sight_dist), -1)
-            beam = [(x, agent.pos[1]) for x in xs]
+        x, y = agent.pos
+        if agent.rot == 0:  # facing north
+            bound_left = max(0, x - self.sight_width)
+            bound_right = min(x_max, x + self.sight_width)
+            bound_up = max(0, y - self.sight_dist)
+            bound_down = y
+        elif agent.rot == 1:  # facing east
+            bound_left = x
+            bound_right = min(x_max, x + self.sight_dist)
+            bound_up = max(0, y - self.sight_width)
+            bound_down = min(y_max, y + self.sight_width)
+        elif agent.rot == 2:  # facing south
+            bound_left = max(0, x - self.sight_width)
+            bound_right = min(x_max, x + self.sight_width)
+            bound_up = y
+            bound_down = min(y_max, y + self.sight_dist)
+        elif agent.rot == 3:  # facing west
+            bound_left = max(0, x - self.sight_dist)
+            bound_right = x
+            bound_up = max(0, y - self.sight_width)
+            bound_down = min(y_max, y + self.sight_width)
         else:
             raise ValueError("agent.rot must be % 4")
-        return [ag for _, ag in self.agents.items() if ag.pos in beam]
+        return [(bound_left, bound_up), (bound_right, bound_down)]
 
     def get_agent_obs(self, agent_id: str) -> np.ndarray:
         """The partial observability of the environment.
-
         TODO: this should have been TDD, so the TODO is to write some simple test cases and make sure they pass.
         """
-        agent = self.agents[agent_id]
-        # TODO: needs to also observe the agents that are within bounds
-        # TODO: rethink what exactly will be returned here, e.g. it might be enough to return the bounds and a list of agents
-        # FIXME: not sure what atm, but something is failing here, see - test_obs
-        x_max, y_max = self.size
-        x, y = agent.pos
-        if agent.rot == 0:  # facing north
-            window_left = max(0, x - self.sight_width)
-            window_right = min(x_max, x + self.sight_width)
-            window_bottom = y
-            window_top = min(y_max, y + self.sight_dist)
-        elif agent.rot == 1:  # facing east
-            window_left = x
-            window_right = min(x_max, x + self.sight_dist)
-            window_bottom = min(y_max, y + self.sight_width)
-            window_top = max(0, y - self.sight_width)
-        elif agent.rot == 2:  # facing south
-            window_left = max(0, x - self.sight_width)
-            window_right = min(x_max, x + self.sight_width)
-            window_bottom = max(y_max, y + self.sight_dist)
-            window_top = y
-        elif agent.rot == 3:  # facing west
-            window_left = max(0, x - self.sight_dist)
-            window_right = x
-            window_bottom = max(0, y - self.sight_width)
-            window_top = min(y_max, y + self.sight_width)
-        else:
-            raise ValueError("agent.rot must be % 4")
-        return self.board[window_left:window_right, window_top:window_bottom]
+        (x0, y0), (x1, y1) = self.get_observable_window(agent_id)
+        return self.board[y0:y1+1][x0:x1+1]  # kind of ugly; feel free to change `get_observable_window` to be non-inclusive for the bottom-right boundary
 
 
 class MultiAgentEnv:  # Placeholder
@@ -369,6 +358,8 @@ class HarvestEnv(MultiAgentEnv):
         for (agent_id, action) in actions.items():
             reward = self.game.process_action(agent_id, action)
             rewards[agent_id] += reward
+
+        self.game.regenerate_apples()
 
         obs = {
             agent_id: self.game.get_agent_obs(agent_id) for agent_id in self.game.agents
