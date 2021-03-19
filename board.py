@@ -92,25 +92,6 @@ def random_board(size: Position,
     return (prob_map < prob).astype(np.int8)
 
 
-def regenerate_apples(board: Board, prob: float = 0.1) -> Board:
-    """
-    Performs a single update of stochastically regenerating apples.
-    It works by computing a convolution counting neighboring apples, scaling this with a base probability,
-    and using that as the probability of an apple being generated there.
-    Needs to be adapted to the version in the DM paper. Also might need an agent-based mask.
-    """
-    kernel = NEIGHBOR_KERNEL
-    neighbor_map: np.ndarray = convolve(board, kernel, mode='constant')
-    prob_map = neighbor_map * prob
-
-    rand = np.random.rand(*neighbor_map.shape)
-
-    regen_map = rand < prob_map
-
-    updated_board = np.clip(board + regen_map, 0, 1)
-    return updated_board
-
-
 def initial_position(i: int, total: int) -> Position:
     """
     Finds a starting position for an i-th agent with $total agents overall.
@@ -136,18 +117,15 @@ class HarvestGame:
                  sight_dist: Optional[int] = 20
                  ):
 
+        self.num_agents = num_agents
         self.size = size
         self.init_prob = init_prob
         self.regen_prob = regen_prob
-
-        self.board = np.array([[]])
-
-        self.num_agents = num_agents
-        self.agents = {}
-
         self.sight_width = sight_width
         self.sight_dist = sight_dist
 
+        self.board = np.array([[]])
+        self.agents = {}
         self.reputation = {}
 
         self.reset()
@@ -155,7 +133,7 @@ class HarvestGame:
     def reset(self):
         self.board = random_board(self.size, self.init_prob)
         self.agents = {
-            f"Agent{i}": Walker(pos=initial_position(i, self.num_agents), rot=np.random.randint(4))
+            f"Agent{i}": Walker(pos=initial_position(i, self.num_agents), rot=1+np.random.randint(2))
             for i in range(self.num_agents)
         }
 
@@ -164,6 +142,7 @@ class HarvestGame:
             for i in range(self.num_agents)
         }
 
+        # don't spawn apple in cells which already contain agents
         for name, agent in self.agents.items():
             self.board[agent.pos] = 0
 
@@ -206,11 +185,32 @@ class HarvestGame:
         #  1: rotate right
         agent.rot = (agent.rot + direction) % 4
 
+    def regenerate_apples(self):
+        """
+        Performs a single update of stochastically regenerating apples.
+        It works by computing a convolution counting neighboring apples, scaling this with a base probability,
+        and using that as the probability of an apple being generated there.
+        Needs to be adapted to the version in the DM paper. Also might need an agent-based mask.
+        """
+        kernel = NEIGHBOR_KERNEL
+        neighbor_map: np.ndarray = convolve(self.board, kernel, mode='constant')
+        prob_map = neighbor_map * self.regen_prob
+
+        rand = np.random.rand(*neighbor_map.shape)
+        regen_map = rand < prob_map
+        updated_board = np.clip(self.board + regen_map, 0, 1)
+
+        # don't spawn apples in cells which already contain agents
+        for name, agent in self.agents.items():
+            updated_board[agent.pos] = 0
+
+        self.board = updated_board
+
     def process_action(self, agent_id: str, action: int) -> float:
         """Processes a single action for a single agent"""
         agent = self.agents[agent_id]
         (x, y), rot = agent.pos, agent.rot
-        if agent.frozen > 0:
+        if agent.frozen > 0:  # if the agent is frozen, should we avoid updating the gradient?
             agent.frozen -= 1
             return 0.
         if action == GO_FORWARD:
@@ -236,25 +236,31 @@ class HarvestGame:
         elif action == ROT_LEFT:
             # Rotate left
             self._rotate_agent(agent, -1)
+            new_pos = (x, y)
         elif action == ROT_RIGHT:
             # Rotate right
             self._rotate_agent(agent, 1)
+            new_pos = (x, y)
         elif action == SHOOT:
             # Shoot a beam
-            affected_agents = self._get_affected_agents(agent_id)
+            affected_agents = self.get_affected_agents(agent_id)
             for _agent in affected_agents:
                 _agent.frozen = 25
-            self.reputation[agent_id] += 1
+            self.reputation[agent_id] += 1  # why does reputation increase for each opponent zapped?
+            new_pos = (x, y)
             # see notebook for weird results
         elif action == 7:
             # No-op
-            pass
+            new_pos = (x, y)
 
-        # TODO: Include apple collection logic
-        # TODO: Return the reward obtained from collecting an apple
-        return 0.
+        new_x, new_y = new_pos[0], new_pos[1]
+        if self.board[new_x][new_y]:  # apple in new cell
+            self.board[new_x][new_y] = 0
+            return 1
+        else:  # no apple in new cell
+            return 0
 
-    def _get_affected_agents(self, agent_id: str, length: int = 6, width: int = 10) -> List[Walker]:
+    def get_affected_agents(self, agent_id: str, length: int = 6, width: int = 10) -> List[Walker]:
         """Returns a list of agents caught in the ray"""
         # TODO: include the width and length of the beam
         agent = self.agents[agent_id]
