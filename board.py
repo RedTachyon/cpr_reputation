@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from typing import Tuple, List, Dict, Optional
-from collections import defaultdict
 
 import numpy as np
 from scipy.ndimage import convolve
@@ -8,8 +7,8 @@ from scipy.ndimage import convolve
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-FORWARD = 0
-BACKWARD = 1
+GO_FORWARD = 0
+GO_BACKWARD = 1
 GO_LEFT = 2
 GO_RIGHT = 3
 ROT_LEFT = 4
@@ -214,12 +213,12 @@ class HarvestGame:
         if agent.frozen > 0:
             agent.frozen -= 1
             return 0.
-        if action == FORWARD:
+        if action == GO_FORWARD:
             # Go forward
             (dx, dy) = DIRECTIONS[rot]
             new_pos = (x + dx, y + dy)
             self._move_agent(agent, new_pos)
-        elif action == BACKWARD:
+        elif action == GO_BACKWARD:
             # Go backward
             (dx, dy) = DIRECTIONS[rot]
             new_pos = (x - dx, y - dy)
