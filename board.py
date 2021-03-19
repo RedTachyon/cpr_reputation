@@ -70,14 +70,15 @@ def get_neighbors(pos: Position,
 
 # TODO representing `pos` as (row, col) instead of (x, y) makes array processing easier
 def create_board(size: Position,
-                 apples: List[Position]) -> Board:
+                 init_prob: float) -> Board:
     """Creates an empty board with a number of cross-shaped apple patterns"""
-    board = np.zeros(size, dtype=np.int8)
+    board = random_board(size, init_prob)
 
-    for pos in apples:
-        for (x, y) in get_neighbors(pos, size, radius=1):
-            board[x, y] = 1
-
+    for y in range(len(board)):
+        for x in range(len(board[0])):
+            if board[y][x]:
+                for (x_n, y_n) in get_neighbors((x, y), size, radius=1):
+                    board[y, x] = 1
     return board
 
 
@@ -127,7 +128,7 @@ class HarvestGame:
         self.reset()
 
     def reset(self):
-        self.board = random_board(self.size, self.init_prob)
+        self.board = create_board(self.size, self.init_prob)
         self.agents = {
             f"Agent{i}": Walker(pos=initial_position(i, self.num_agents), rot=1+np.random.randint(2))
             for i in range(self.num_agents)
@@ -343,8 +344,9 @@ class MultiAgentEnv:  # Placeholder
 
 class HarvestEnv(MultiAgentEnv):
     def __init__(self, *args, **kwargs):
-        self.game = HarvestGame(*args, **kwargs)
         self.time = 0
+        self.game = HarvestGame(*args, **kwargs)
+        self.game.regenerate_apples()
 
     def reset(self) -> Dict[str, np.ndarray]:
         self.game.reset()
@@ -358,8 +360,6 @@ class HarvestEnv(MultiAgentEnv):
         for (agent_id, action) in actions.items():
             reward = self.game.process_action(agent_id, action)
             rewards[agent_id] += reward
-
-        self.game.regenerate_apples()
 
         obs = {
             agent_id: self.game.get_agent_obs(agent_id) for agent_id in self.game.agents
