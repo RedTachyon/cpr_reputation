@@ -86,8 +86,9 @@ def create_board(size: Position,
 def random_board(size: Position,
                  num_crosses=10) -> Board:
     """Creates a board with random cross-shaped apple patterns"""
-    all_positions = [(row, col) for col in range(len(size[1])) for row in range(len(size[0]))]
-    initial_apples = np.random.choice(all_positions, num_crosses)
+    all_positions = [(row, col) for col in range(size[1]) for row in range(size[0])]
+    random_idx = np.random.choice(range(len(all_positions)), num_crosses, replace=False)
+    initial_apples = [all_positions[i] for i in random_idx]
     board = create_board(size, initial_apples)
     return board
 
@@ -112,13 +113,15 @@ class HarvestGame:
                  num_agents: int,
                  size: Position,
                  sight_width: Optional[int] = 10,  # default value from DM paper
-                 sight_dist: Optional[int] = 20  # default value from DM paper
+                 sight_dist: Optional[int] = 20,  # default value from DM paper
+                 num_crosses: Optional[int] = 10  # number of apple-crosses to start with
                  ):
 
         self.num_agents = num_agents
         self.size = size
         self.sight_width = sight_width
         self.sight_dist = sight_dist
+        self.num_crosses = num_crosses
 
         self.board = np.array([[]])
         self.agents = {}
@@ -127,7 +130,7 @@ class HarvestGame:
         self.reset()
 
     def reset(self):
-        self.board = random_board(self.size, num_crosses=10)
+        self.board = random_board(self.size, self.num_crosses)
         self.agents = {
             f"Agent{i}": Walker(pos=agent_initial_position(i, self.num_agents), rot=1+np.random.randint(2))  # start facing east or south
             for i in range(self.num_agents)
@@ -330,14 +333,12 @@ class HarvestGame:
             bound_down = min(row_max, row + self.sight_width)
         else:
             raise ValueError("agent.rot must be % 4")
-        return [(bound_left, bound_up), (bound_right, bound_down)]
+        return [(bound_up, bound_left), (bound_down, bound_right)]  # (top left, bottom right)
 
     def get_agent_obs(self, agent_id: str) -> np.ndarray:
-        """The partial observability of the environment.
-        TODO: this should have been TDD, so the TODO is to write some simple test cases and make sure they pass.
-        """
+        """The partial observability of the environment."""
         (row0, col0), (row1, col1) = self.get_observable_window(agent_id)
-        return self.board[row0:row1+1][col0:col1+1]
+        return self.board[row0:row1+1, col0:col1+1]
 
 
 class MultiAgentEnv:  # Placeholder
