@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Tuple, List, Dict, Optional
 
@@ -58,28 +59,23 @@ def in_bounds(pos: Position,
 
 
 def get_neighbors(pos: Position,
-                  size: Position) -> List[Position]:
+                  size: Position,
+                  radius=1) -> List[Position]:
     """Get a list of neighboring positions (including self) that are still within the boundaries of the board"""
-    increments = [
-        (0, 0),
-        (-1, 0),
-        (1, 0),
-        (0, -1),
-        (0, 1)
-    ]
+    increments = [(x, y) for y in range(size[0]) for x in range(size[1]) if abs(x) + abs(y) <= radius]
 
     (x, y) = pos
-
     return [(x + dx, y + dy) for (dx, dy) in increments if in_bounds((x + dx, y + dy), size)]
 
 
+# TODO representing `pos` as (row, col) instead of (x, y) makes array processing easier
 def create_board(size: Position,
                  apples: List[Position]) -> Board:
     """Creates an empty board with a number of cross-shaped apple patterns"""
     board = np.zeros(size, dtype=np.int8)
 
     for pos in apples:
-        for (x, y) in get_neighbors(pos, size):
+        for (x, y) in get_neighbors(pos, size, radius=1):
             board[x, y] = 1
 
     return board
@@ -206,6 +202,42 @@ class HarvestGame:
 
         self.board = updated_board
 
+    def regenerate_apples_dm(self):
+        """
+        Stochastically respawn apples based on number of neighbors:
+
+        prob | n_neighbors
+        ------------------
+        0    | L = 0
+        0.01 | L = 1 or 2
+        0.05 | L = 3 or 4
+        0.1  | L > 4
+        """
+        prob_table = defaultdict(lambda: 0.1)
+        prob_table[0] = 0.0
+        prob_table[1] = 0.01
+        prob_table[2] = 0.01
+        prob_table[3] = 0.05
+        prob_table[4] = 0.05
+
+        prob_map = np.zeros(self.size)
+        for y in range(self.size[0]):
+            for x in range(self.size[1]):
+                pos = (x, y)
+                neighboring_pos = get_neighbors(pos, self.size, radius=2)
+                neighboring_apples = sum([self.board[y][x] for (x, y) in neighboring_pos])
+                prob_map[y][x] = prob_table[neighboring_apples]
+
+        rand = np.random.rand(prob_map.shape)
+        regen_map = rand < prob_map
+        updated_board = np.clip(self.board + regen_map, 0, 1)
+
+        # don't spawn apples in cells which already contain agents
+        for name, agent in self.agents.items():
+            updated_board[agent.pos] = 0
+
+        self.board = updated_board
+
     def process_action(self, agent_id: str, action: int) -> float:
         """Processes a single action for a single agent"""
         agent = self.agents[agent_id]
@@ -260,7 +292,7 @@ class HarvestGame:
         else:  # no apple in new cell
             return 0
 
-    def get_affected_agents(self, agent_id: str, length: int = 6, width: int = 10) -> List[Walker]:
+    def get_affected_agents(self, agent_id: str, beam_length: int = 6, beam_width: int = 10) -> List[Walker]:
         """Returns a list of agents caught in the ray"""
         # TODO: include the width and length of the beam
         agent = self.agents[agent_id]
