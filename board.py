@@ -62,23 +62,22 @@ def get_neighbors(pos: Position,
                   size: Position,
                   radius=1) -> List[Position]:
     """Get a list of neighboring positions (including self) that are still within the boundaries of the board"""
-    increments = [(x, y) for y in range(size[0]) for x in range(size[1]) if abs(x) + abs(y) <= radius]
-
-    (x, y) = pos
-    return [(x + dx, y + dy) for (dx, dy) in increments if in_bounds((x + dx, y + dy), size)]
+    x_0, y_0 = pos
+    return [(x_1, y_1) for x_1 in range(size[0]) for y_1 in range(size[1]) if abs(x_1 - x_0) + abs(y_1 - y_0) <= radius]
 
 
 # TODO representing `pos` as (row, col) instead of (x, y) makes array processing easier
 def create_board(size: Position,
                  init_prob: float) -> Board:
     """Creates an empty board with a number of cross-shaped apple patterns"""
-    board = random_board(size, init_prob)
+    orig_board = random_board(size, init_prob)
+    board = orig_board.copy()
 
-    for y in range(len(board)):
-        for x in range(len(board[0])):
-            if board[y][x]:
+    for y in range(len(orig_board)):
+        for x in range(len(orig_board[0])):
+            if orig_board[y][x]:
                 for (x_n, y_n) in get_neighbors((x, y), size, radius=1):
-                    board[y, x] = 1
+                    board[y_n, x_n] = 1
     return board
 
 
@@ -108,7 +107,7 @@ class HarvestGame:
     def __init__(self,
                  num_agents: int,
                  size: Position,
-                 init_prob: float = 0.1,
+                 init_prob: float = 0.02,
                  regen_prob: float = 0.01,
                  sight_width: Optional[int] = 10,  # default values from DM paper
                  sight_dist: Optional[int] = 20
@@ -279,7 +278,7 @@ class HarvestGame:
             affected_agents = self.get_affected_agents(agent_id)
             for _agent in affected_agents:
                 _agent.frozen = 25
-            self.reputation[agent_id] += 1  # why does reputation increase for each opponent zapped?
+            self.reputation[agent_id] += 1  # why does reputation increase after shooting?
             new_pos = (x, y)
             # see notebook for weird results
         elif action == 7:
@@ -296,9 +295,10 @@ class HarvestGame:
     def get_affected_agents(self, agent_id: str) -> List[Walker]:
         """Returns a list of agents caught in the ray"""
         (x0, y0), (x1, y1) = self.get_observable_window(agent_id)
-        return [ag for _, ag in self.agents.items()
-                if x0 <= ag.pos[0] <= x1
-                and y0 <= ag.pos[1] <= y1]
+        return [other_agent for other_name, other_agent in self.agents.items()
+                if other_name != agent_id
+                and x0 <= other_agent.pos[0] <= x1
+                and y0 <= other_agent.pos[1] <= y1]
 
     def get_observable_window(self, agent_id: str) -> List[Position]:
         """Returns indices of the (top left, bottom right) (inclusive) boundaries of an agent's vision."""
@@ -335,7 +335,7 @@ class HarvestGame:
         TODO: this should have been TDD, so the TODO is to write some simple test cases and make sure they pass.
         """
         (x0, y0), (x1, y1) = self.get_observable_window(agent_id)
-        return self.board[y0:y1+1][x0:x1+1]  # kind of ugly; feel free to change `get_observable_window` to be non-inclusive for the bottom-right boundary
+        return self.board[y0:y1+1][x0:x1+1]
 
 
 class MultiAgentEnv:  # Placeholder
@@ -346,7 +346,6 @@ class HarvestEnv(MultiAgentEnv):
     def __init__(self, *args, **kwargs):
         self.time = 0
         self.game = HarvestGame(*args, **kwargs)
-        self.game.regenerate_apples()
 
     def reset(self) -> Dict[str, np.ndarray]:
         self.game.reset()
