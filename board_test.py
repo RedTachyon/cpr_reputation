@@ -54,7 +54,7 @@ def test_neighbors():
 def test_regrow():
     np.random.seed(0)
     board = random_board((50, 50), prob=0.2)
-    new_board = regenerate_apples(board, prob=0.2)  # This will fail once we fix the regrowing
+    new_board = regenerate_apples(board)  # This will fail once we fix the regrowing
     assert np.sum(new_board) > np.sum(board)
     assert new_board.shape == board.shape
     assert new_board.min() == 0
