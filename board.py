@@ -214,7 +214,7 @@ class HarvestGame:
 
     def __init__(self,
                  num_agents: int,
-                 size: Position,
+                 size: Tuple[int, int],
                  sight_width: int = 10,  # default value from DM paper
                  sight_dist: int = 20,  # default value from DM paper
                  beam_width: int = 5,
@@ -223,7 +223,7 @@ class HarvestGame:
                  ):
 
         self.num_agents = num_agents
-        self.size = size
+        self.size = Position(*size)
         self.sight_width = sight_width
         self.sight_dist = sight_dist
         self.beam_width = beam_width
@@ -382,7 +382,7 @@ class HarvestGame:
 
         # Rotate the board so that the agent is always pointing up.
         # I checked, the direction should be correct - still tests, will be good
-        board = fast_rot90(full_board, rot)
+        board = np.rot90(full_board, rot)
 
         agent_i, agent_j = agent.pos
 
@@ -392,10 +392,13 @@ class HarvestGame:
         bounds_i_clipped = np.clip(bounds_i, 0, self.board.shape[0])
 
         bounds_j = (agent_j - self.sight_width, agent_j + self.sight_width + 1)
-        (bound_left, bound_right) = bounds_i
+        (bound_left, bound_right) = bounds_j
         bounds_j_clipped = np.clip(bounds_j, 0, self.board.shape[1])
 
+        max_i, max_j = self.size
+
         base_slice = board[slice(*bounds_i_clipped), slice(*bounds_j_clipped)]  # <= (20, 21)
+        # breakpoint()
         if bound_up < 0:
             padding = np.zeros((-bound_up, base_slice.shape[1], base_slice.shape[2]))
             base_slice = np.concatenate([padding, base_slice], axis=0)
@@ -403,7 +406,7 @@ class HarvestGame:
             padding = np.zeros((base_slice.shape[0], -bound_left, base_slice.shape[2]))
             base_slice = np.concatenate([padding, base_slice], axis=1)
         if bound_right > self.board.shape[1]:
-            padding = np.zeros((base_slice.shape[0], -bound_left, base_slice.shape[2]))
+            padding = np.zeros((base_slice.shape[0], max_j-bound_right, base_slice.shape[2]))
             base_slice = np.concatenate([base_slice, padding], axis=1)
         if bound_down > self.board.shape[0]:
             raise ValueError("WTF")
