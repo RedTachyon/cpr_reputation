@@ -139,19 +139,19 @@ def get_neighbors(pos: Position,
                 abs(row1 - row0) + abs(col1 - col0) <= radius]
 
 
-def create_board(size: Position,
-                 apples: List[Position]) -> Board:
+def create_board(size: Tuple[int, int],
+                 apples: List[Tuple[int, int]]) -> Board:
     """Creates an empty board with a number of cross-shaped apple patterns"""
     board = np.zeros(size, dtype=np.int8)
 
     for pos in apples:
-        for (i, j) in get_neighbors(pos, size, radius=1):
+        for (i, j) in get_neighbors(Position(*pos), Position(*size), radius=1):
             board[i, j] = 1
 
     return board
 
 
-def random_board(size: Position,
+def random_board(size: Tuple[int, int],
                  prob: float = 0.1) -> Board:
     """Creates a board with each square having a probability of containing an apple"""
     prob_map = np.random.rand(*size)
