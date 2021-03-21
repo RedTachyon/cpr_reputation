@@ -40,6 +40,8 @@ DIRECTIONS = [
 cmap = mpl.colors.ListedColormap(['white', 'red', 'green'])
 
 Board = np.ndarray
+
+
 # Position = Tuple[int, int]
 
 class Position(namedtuple("Position", ["i", "j"])):
@@ -81,6 +83,24 @@ class Position(namedtuple("Position", ["i", "j"])):
         min_j, max_j = sorted((pos1.j, pos2.j))
         return (min_i <= self.i <= max_i) and (min_j <= self.j <= max_j)
 
+
+def fast_rot90(array: np.ndarray, k: int):
+    """Rotates an array 90 degrees on the first two axes. Equivalent to np.rot90(array, k, (0, 1)), but faster.
+
+    Might make some arrays non-contiguous, not sure if that will be a problem. If we need it to be contiguous,
+    performance will drop again. UPDATE: rot90 also makes in noncontiguous, nvm it's just faster.
+    Still, we need to profile both options in a full context."""
+    # TODO: test this for equality with np.rot90
+    if (k % 4) == 0:
+        return array[:]
+    elif (k % 4) == 1:
+        return array.T[::-1, :]
+    elif (k % 4) == 2:
+        return array[::-1, ::-1]
+    else:
+        return array.T[:, ::-1]
+
+
 @dataclass
 class Walker:
     pos: Position
@@ -111,7 +131,6 @@ def get_neighbors(pos: Position,
             (0, -1),
             (0, 1)
         ]
-
 
         return [pos + inc for inc in increments if in_bounds(pos + inc, size)]
     else:
@@ -330,9 +349,9 @@ class HarvestGame:
         # DIRECTIONS[rot] defines the forward direction
         forward = DIRECTIONS[rot]
         # DIRECTIONS[rot-1] is the agent's left side
-        left = DIRECTIONS[(rot-1) % 4]
+        left = DIRECTIONS[(rot - 1) % 4]
         # DIRECTIONS[rot+1] is the agent's right side
-        right = DIRECTIONS[(rot+1) % 4]
+        right = DIRECTIONS[(rot + 1) % 4]
 
         bound1 = agent.pos + (forward * self.beam_dist + left * self.beam_width)  # Forward-left corner
         bound2 = agent.pos + (right * self.beam_width)  # Backward-right corner
@@ -348,6 +367,7 @@ class HarvestGame:
 
     def get_agent_obs(self, agent_id: str):
         agent = self.agents[agent_id]
+
         apple_board = self.board
         agent_board = np.zeros_like(self.board)
         for other_agent_id, other_agent in self.agents.items():
@@ -355,27 +375,40 @@ class HarvestGame:
 
         wall_board = np.zeros_like(apple_board)  # TODO: use actual walls
 
-        all_boards = np.stack([apple_board, agent_board, wall_board], axis=-1)  # W x H x 3
+        # Add any extra layers before this line
+
+        full_board = np.stack([apple_board, agent_board, wall_board], axis=-1)  # H x W x 3
         rot = self.agents[agent_id].rot
 
-        board = np.rot90(all_boards, rot)  # TODO: make sure it's in the right direction
+        # Rotate the board so that the agent is always pointing up.
+        # I checked, the direction should be correct - still tests, will be good
+        board = fast_rot90(full_board, rot)
 
         agent_i, agent_j = agent.pos
-        bounds_i = (agent_i - 19, agent_i + 1)  # TODO: maybe +1
-        bounds_j = (agent_j - 10, agent_j + 11)  # TODO: OB1 errors
-        # board[i:j] == board[slice(i, j)]
-        base_slice = board[slice(*bounds_i), slice(*bounds_j)]  # (20, 21) OR (10, 21)
-        if bounds_i[0] < 0:  # TODO: Complete this
-            base_slice = np.concatenate([base_slice, np.zeros(...)])
-        if bounds_j[0] < 0:
-            base_slice = np.concatenate([base_slice, np.zeros((base_slice.shape[0], -bounds_j[0], base_slice.shape[2]))], axis=1)
-        if bounds_j[1] > self.board.shape[1]:
-            base_slice = np.concatenate([base_slice, np.zeros(...)], axis=1)
-        if bounds_i[1] > self.board.shape[0]:
+
+        # Horizontal bounds
+        bounds_i = (agent_i - self.sight_dist + 1, agent_i + 1)
+        (bound_up, bound_down) = bounds_i
+        bounds_i_clipped = np.clip(bounds_i, 0, self.board.shape[0])
+
+        bounds_j = (agent_j - self.sight_width, agent_j + self.sight_width + 1)
+        (bound_left, bound_right) = bounds_i
+        bounds_j_clipped = np.clip(bounds_j, 0, self.board.shape[1])
+
+        base_slice = board[slice(*bounds_i_clipped), slice(*bounds_j_clipped)]  # <= (20, 21)
+        if bound_up < 0:
+            padding = np.zeros((-bound_up, base_slice.shape[1], base_slice.shape[2]))
+            base_slice = np.concatenate([padding, base_slice], axis=0)
+        if bound_left < 0:
+            padding = np.zeros((base_slice.shape[0], -bound_left, base_slice.shape[2]))
+            base_slice = np.concatenate([padding, base_slice], axis=1)
+        if bound_right > self.board.shape[1]:
+            padding = np.zeros((base_slice.shape[0], -bound_left, base_slice.shape[2]))
+            base_slice = np.concatenate([base_slice, padding], axis=1)
+        if bound_down > self.board.shape[0]:
             raise ValueError("WTF")
 
         return base_slice  # 20 x 21
-
 
 
 class MultiAgentEnv:  # Placeholder
