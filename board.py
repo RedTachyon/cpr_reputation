@@ -1,4 +1,6 @@
-from collections import defaultdict
+from __future__ import annotations
+
+from collections import defaultdict, namedtuple
 from dataclasses import dataclass
 from typing import Tuple, List, Dict, Optional
 
@@ -38,7 +40,65 @@ DIRECTIONS = [
 cmap = mpl.colors.ListedColormap(['white', 'red', 'green'])
 
 Board = np.ndarray
-Position = Tuple[int, int]
+
+
+# Position = Tuple[int, int]
+
+class Position(namedtuple("Position", ["i", "j"])):
+    def __add__(self, other):
+        if isinstance(other, Position):
+            return Position(i=self.i + other.i, j=self.j + other.j)
+        elif isinstance(other, int):
+            return Position(i=self.i + other, j=self.j + other)
+        elif isinstance(other, tuple):
+            return Position(i=self.i + other[0], j=self.j + other[1])
+        else:
+            raise ValueError("A Position can only be added to an int or another Position")
+
+    def __mul__(self, other):
+        if isinstance(other, int):
+            return Position(i=self.i * other, j=self.j * other)
+        else:
+            raise ValueError("A Position can only be multiplied by an int")
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __sub__(self, other):
+        if isinstance(other, Position):
+            return Position(i=self.i - other.i, j=self.j - other.j)
+        elif isinstance(other, int):
+            return Position(i=self.i - other, j=self.j - other)
+        elif isinstance(other, tuple):
+            return Position(i=self.i - other[0], j=self.j - other[1])
+        else:
+            raise ValueError("A Position can only be added to an int or another Position")
+
+    def __neg__(self):
+        return Position(-self.i, -self.j)
+
+    def is_between(self, pos1: Position, pos2: Position):
+        """Checks whether a position is between two antipodal bounding box coordinates. Inclusive on all sides"""
+        min_i, max_i = sorted((pos1.i, pos2.i))
+        min_j, max_j = sorted((pos1.j, pos2.j))
+        return (min_i <= self.i <= max_i) and (min_j <= self.j <= max_j)
+
+
+def fast_rot90(array: np.ndarray, k: int):
+    """Rotates an array 90 degrees on the first two axes. Equivalent to np.rot90(array, k, (0, 1)), but faster.
+
+    Might make some arrays non-contiguous, not sure if that will be a problem. If we need it to be contiguous,
+    performance will drop again. UPDATE: rot90 also makes in noncontiguous, nvm it's just faster.
+    Still, we need to profile both options in a full context."""
+    # TODO: test this for equality with np.rot90
+    if (k % 4) == 0:
+        return array[:]
+    elif (k % 4) == 1:
+        return array.T[::-1, :]
+    elif (k % 4) == 2:
+        return array[::-1, ::-1]
+    else:
+        return array.T[:, ::-1]
 
 
 @dataclass
@@ -54,9 +114,9 @@ class Walker:
 def in_bounds(pos: Position,
               size: Position) -> bool:
     """Checks whether the position fits within the board of a given size"""
-    (row, col) = pos
-    (height, width) = size
-    return 0 <= row < height and 0 <= col < width
+    (i, j) = pos
+    (max_i, max_j) = size
+    return 0 <= i < max_i and 0 <= j < max_j
 
 
 def get_neighbors(pos: Position,
@@ -72,42 +132,40 @@ def get_neighbors(pos: Position,
             (0, 1)
         ]
 
-        (x, y) = pos
-
-        return [(x + dx, y + dy) for (dx, dy) in increments if in_bounds((x + dx, y + dy), size)]
+        return [pos + inc for inc in increments if in_bounds(pos + inc, size)]
     else:
         row0, col0 = pos
-        return [(row1, col1) for col1 in range(size[1]) for row1 in range(size[0]) if
+        return [Position(row1, col1) for col1 in range(size[1]) for row1 in range(size[0]) if
                 abs(row1 - row0) + abs(col1 - col0) <= radius]
 
 
-def create_board(size: Position,
-                 apples: List[Position]) -> Board:
+def create_board(size: Tuple[int, int],
+                 apples: List[Tuple[int, int]]) -> Board:
     """Creates an empty board with a number of cross-shaped apple patterns"""
     board = np.zeros(size, dtype=np.int8)
 
     for pos in apples:
-        for (x, y) in get_neighbors(pos, size, radius=1):
-            board[x, y] = 1
+        for (i, j) in get_neighbors(Position(*pos), Position(*size), radius=1):
+            board[i, j] = 1
 
     return board
 
 
-def random_board(size: Position,
+def random_board(size: Tuple[int, int],
                  prob: float = 0.1) -> Board:
     """Creates a board with each square having a probability of containing an apple"""
     prob_map = np.random.rand(*size)
     return (prob_map < prob).astype(np.int8)
 
 
-def random_crosses(size: Position,
-                   num_crosses: int = 10) -> Board:
-    """Creates a board with random cross-shaped apple patterns"""
-    all_positions = [(row, col) for col in range(size[1]) for row in range(size[0])]
-    random_idx = np.random.choice(range(len(all_positions)), num_crosses, replace=False)
-    initial_apples = [all_positions[i] for i in random_idx]
-    board = create_board(size, initial_apples)
-    return board
+# def random_crosses(size: Position,
+#                    num_crosses: int = 10) -> Board:
+#     """Creates a board with random cross-shaped apple patterns"""
+#     all_positions = [(row, col) for col in range(size[1]) for row in range(size[0])]
+#     random_idx = np.random.choice(range(len(all_positions)), num_crosses, replace=False)
+#     initial_apples = [all_positions[i] for i in random_idx]
+#     board = create_board(size, initial_apples)
+#     return board
 
 
 def agent_initial_position(i: int, total: int) -> Position:
@@ -122,7 +180,7 @@ def agent_initial_position(i: int, total: int) -> Position:
     idx_map = np.arange(layout_base ** 2).reshape(layout_base, layout_base)
     (rows, cols) = np.where(idx_map == i)
     row, col = rows[0], cols[0]
-    return row, col
+    return Position(row, col)
 
 
 @vectorize
@@ -139,39 +197,47 @@ def regrow_prob(n: int) -> float:
 
 def regenerate_apples(board: Board) -> Board:
     kernel = NEIGHBOR_KERNEL
-    neighbor_map: np.ndarray = convolve(board, kernel, mode='constant')  # TODO: make sure this is ints
+    neighbor_map: np.ndarray = convolve(board, kernel, mode='constant')
+    # The types here are fine, but numba.vectorize preserves the signature
+    # noinspection PyTypeChecker
     prob_map = regrow_prob(neighbor_map)
 
     rand = np.random.rand(*neighbor_map.shape)
     regen_map = rand < prob_map
-    updated_board = np.clip(board + regen_map, 0, 1)
+    # updated_board = np.clip(board + regen_map, 0, 1).astype(int)
+    updated_board = (board + regen_map > 0).astype(int)
 
     return updated_board
 
 
 class HarvestGame:
+
     def __init__(self,
                  num_agents: int,
-                 size: Position,
-                 sight_width: Optional[int] = 10,  # default value from DM paper
-                 sight_dist: Optional[int] = 20,  # default value from DM paper
-                 num_crosses: Optional[int] = 10  # number of apple-crosses to start with
+                 size: Tuple[int, int],
+                 sight_width: int = 10,  # default value from DM paper
+                 sight_dist: int = 20,  # default value from DM paper
+                 beam_width: int = 5,
+                 beam_dist: int = 10,
+                 num_crosses: int = 10  # number of apple-crosses to start with
                  ):
 
         self.num_agents = num_agents
-        self.size = size
+        self.size = Position(*size)
         self.sight_width = sight_width
         self.sight_dist = sight_dist
+        self.beam_width = beam_width
+        self.beam_dist = beam_dist
         self.num_crosses = num_crosses
 
         self.board = np.array([[]])
-        self.agents = {}
+        self.agents: Dict[str, Walker] = {}
         self.reputation = {}
 
         self.reset()
 
     def reset(self):
-        self.board = random_crosses(self.size, self.num_crosses)
+        self.board = random_board(self.size, self.num_crosses)
         self.agents = {
             f"Agent{i}": Walker(pos=agent_initial_position(i, self.num_agents), rot=1 + np.random.randint(2))
             # start facing east or south
@@ -229,36 +295,32 @@ class HarvestGame:
     def process_action(self, agent_id: str, action: int) -> float:
         """Processes a single action for a single agent"""
         agent = self.agents[agent_id]
-        (row, col), rot = agent.pos, agent.rot
+        pos, rot = agent.pos, agent.rot
         if agent.frozen > 0:  # if the agent is frozen, should we avoid updating the gradient?
             agent.frozen -= 1
             return 0.
         if action == GO_FORWARD:
             # Go forward
-            (drow, dcol) = DIRECTIONS[rot]  # TODO Maybe change to (i, j)
-            new_pos = (row + drow, col + dcol)
-            self._move_agent(agent, new_pos)
+            new_pos = pos + DIRECTIONS[rot]
+            self._move_agent(agent_id, new_pos)
         elif action == GO_BACKWARD:
             # Go backward
-            (drow, dcol) = DIRECTIONS[rot]
-            new_pos = (row - drow, col - dcol)
-            self._move_agent(agent, new_pos)
+            new_pos = pos - DIRECTIONS[rot]
+            self._move_agent(agent_id, new_pos)
         elif action == GO_LEFT:
             # Go left
-            (drow, dcol) = DIRECTIONS[(rot - 1) % 4]
-            new_pos = (row + drow, col + dcol)
-            self._move_agent(agent, new_pos)
+            new_pos = pos + DIRECTIONS[(rot - 1) % 4]
+            self._move_agent(agent_id, new_pos)
         elif action == GO_RIGHT:
             # Go right
-            (drow, dcol) = DIRECTIONS[(rot + 1) % 4]
-            new_pos = (row + drow, col + dcol)
-            self._move_agent(agent, new_pos)
+            new_pos = pos + DIRECTIONS[(rot + 1) % 4]
+            self._move_agent(agent_id, new_pos)
         elif action == ROT_LEFT:
             # Rotate left
-            self._rotate_agent(agent, -1)
+            self._rotate_agent(agent_id, -1)
         elif action == ROT_RIGHT:
             # Rotate right
-            self._rotate_agent(agent, 1)
+            self._rotate_agent(agent_id, 1)
         elif action == SHOOT:
             # Shoot a beam
             affected_agents = self.get_affected_agents(agent_id)
@@ -279,75 +341,77 @@ class HarvestGame:
         else:  # no apple in new cell
             return 0.
 
-    def get_affected_agents(self, agent_id: str) -> List[Walker]: # FIXME: change the behavior, set a parameter for beam width/length
+    def get_beam_bounds(self, agent_id: str) -> Tuple[Position, Position]:
+        """Returns indices of the (top left, bottom right) (inclusive) boundaries of an agent's vision."""
+        agent = self.agents[agent_id]
+        rot = agent.rot
+
+        # DIRECTIONS[rot] defines the forward direction
+        forward = Position(*DIRECTIONS[rot])
+        # DIRECTIONS[rot-1] is the agent's left side
+        left = Position(*DIRECTIONS[(rot - 1) % 4])
+        # DIRECTIONS[rot+1] is the agent's right side
+        right = Position(*DIRECTIONS[(rot + 1) % 4])
+
+        bound1 = agent.pos + ((forward * self.beam_dist) + (left * self.beam_width))  # Forward-left corner
+        bound2 = agent.pos + (right * self.beam_width)  # Backward-right corner
+
+        return bound1, bound2
+
+    def get_affected_agents(self, agent_id: str) -> List[Walker]:
         """Returns a list of agents caught in the ray"""
-        (row0, col0), (row1, col1) = self.get_beam_bounds(agent_id)
+        bound1, bound2 = self.get_beam_bounds(agent_id)
         return [other_agent for other_name, other_agent in self.agents.items()
                 if other_name != agent_id
-                and row0 <= other_agent.pos[0] <= row1
-                and col0 <= other_agent.pos[1] <= col1]
+                and other_agent.pos.is_between(bound1, bound2)]
 
     def get_agent_obs(self, agent_id: str):
         agent = self.agents[agent_id]
+
         apple_board = self.board
         agent_board = np.zeros_like(self.board)
         for other_agent_id, other_agent in self.agents.items():
             agent_board[other_agent.pos] = 1
 
-        wall_board = ...
+        wall_board = np.zeros_like(apple_board)  # TODO: use actual walls
 
-        all_boards = np.stack([apple_board, agent_board, wall_board], axis=-1)  # W x H x 3
+        # Add any extra layers before this line
+
+        full_board = np.stack([apple_board, agent_board, wall_board], axis=-1)  # H x W x 3
         rot = self.agents[agent_id].rot
 
-        board = np.rot90(all_boards, rot)  # TODO: make sure it's in the right direction
+        # Rotate the board so that the agent is always pointing up.
+        # I checked, the direction should be correct - still tests, will be good
+        board = np.rot90(full_board, rot)
 
         agent_i, agent_j = agent.pos
-        bounds_i = (agent_i - 19, agent_i + 1)  # TODO: maybe +1
-        bounds_j = (agent_j - 10, agent_j + 11)  # TODO: OB1 errors
-        # board[i:j] == board[slice(i, j)]
-        base_slice = board[slice(*bounds_i), slice(*bounds_j)]  # (20, 21) OR (10, 21)
-        if bounds_i[0] < 0:  # TODO: Complete this
-            base_slice = np.concatenate([base_slice, np.zeros(...)])
-        if bounds_j[0] < 0:
-            base_slice = np.concatenate([base_slice, np.zeros((base_slice.shape[0], -bounds_j[0], base_slice.shape[2]))], axis=1)
-        if bounds_j[1] > self.board.shape[1]:
-            base_slice = np.concatenate([base_slice, np.zeros(...)], axis=1)
-        if bounds_i[1] > self.board.shape[0]:
+
+        # Horizontal bounds
+        bounds_i = (agent_i - self.sight_dist + 1, agent_i + 1)
+        (bound_up, bound_down) = bounds_i
+        bounds_i_clipped = np.clip(bounds_i, 0, self.board.shape[0])
+
+        bounds_j = (agent_j - self.sight_width, agent_j + self.sight_width + 1)
+        (bound_left, bound_right) = bounds_j
+        bounds_j_clipped = np.clip(bounds_j, 0, self.board.shape[1])
+
+        max_i, max_j = self.size
+
+        base_slice = board[slice(*bounds_i_clipped), slice(*bounds_j_clipped)]  # <= (20, 21)
+        # breakpoint()
+        if bound_up < 0:
+            padding = np.zeros((-bound_up, base_slice.shape[1], base_slice.shape[2]))
+            base_slice = np.concatenate([padding, base_slice], axis=0)
+        if bound_left < 0:
+            padding = np.zeros((base_slice.shape[0], -bound_left, base_slice.shape[2]))
+            base_slice = np.concatenate([padding, base_slice], axis=1)
+        if bound_right > self.board.shape[1]:
+            padding = np.zeros((base_slice.shape[0], max_j-bound_right, base_slice.shape[2]))
+            base_slice = np.concatenate([base_slice, padding], axis=1)
+        if bound_down > self.board.shape[0]:
             raise ValueError("WTF")
 
         return base_slice  # 20 x 21
-
-    def get_beam_bounds(self, agent_id: str) -> List[Position]:
-        """Returns indices of the (top left, bottom right) (inclusive) boundaries of an agent's vision."""
-        row_max = self.size[0] - 1
-        col_max = self.size[1] - 1
-        agent = self.agents[agent_id]
-        row, col = agent.pos
-
-        if agent.rot == 0:  # facing north
-            bound_left = col - self.sight_width
-            bound_right = min(col_max, col + self.sight_width)
-            bound_up = max(0, row - self.sight_dist)
-            bound_down = row
-        elif agent.rot == 1:  # facing east
-            bound_left = col
-            bound_right = min(col_max, col + self.sight_dist)
-            bound_up = max(0, row - self.sight_width)
-            bound_down = min(row_max, row + self.sight_width)
-        elif agent.rot == 2:  # facing south
-            bound_left = max(0, col - self.sight_width)
-            bound_right = min(col_max, col + self.sight_width)
-            bound_up = row
-            bound_down = min(row_max, row + self.sight_dist)
-        elif agent.rot == 3:  # facing west
-            bound_left = max(0, col - self.sight_dist)
-            bound_right = col
-            bound_up = max(0, row - self.sight_width)
-            bound_down = min(row_max, row + self.sight_width)
-        else:
-            raise ValueError("agent.rot must be % 4")
-        return [(bound_up, bound_left), (bound_down, bound_right)]  # (top left, bottom right)
-
 
 
 class MultiAgentEnv:  # Placeholder
