@@ -347,13 +347,13 @@ class HarvestGame:
         rot = agent.rot
 
         # DIRECTIONS[rot] defines the forward direction
-        forward = DIRECTIONS[rot]
+        forward = Position(*DIRECTIONS[rot])
         # DIRECTIONS[rot-1] is the agent's left side
-        left = DIRECTIONS[(rot - 1) % 4]
+        left = Position(*DIRECTIONS[(rot - 1) % 4])
         # DIRECTIONS[rot+1] is the agent's right side
-        right = DIRECTIONS[(rot + 1) % 4]
+        right = Position(*DIRECTIONS[(rot + 1) % 4])
 
-        bound1 = agent.pos + (forward * self.beam_dist + left * self.beam_width)  # Forward-left corner
+        bound1 = agent.pos + ((forward * self.beam_dist) + (left * self.beam_width))  # Forward-left corner
         bound2 = agent.pos + (right * self.beam_width)  # Backward-right corner
 
         return bound1, bound2
