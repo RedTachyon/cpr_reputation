@@ -29,10 +29,7 @@ jobs:
                pip install -r requirements.txt
         - name: Lint with flake8
           run: |
-               pip install flake8
                flake8 --max-line-length 89 cpr_reputation/
                flake8 --max-line-length 89 test
         - name: Test
-          run: |
-               pip install pytest
-               pytest
+          run: pytest
