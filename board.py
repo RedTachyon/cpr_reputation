@@ -77,6 +77,14 @@ class Position(namedtuple("Position", ["i", "j"])):
     def __neg__(self):
         return Position(-self.i, -self.j)
 
+    def __eq__(self, other) -> bool:
+        if isinstance(other, Position):
+            return self.i == other.i and self.j == other.j
+        if isinstance(other, (tuple, list)):
+            assert len(other) == 2, "Position equality comparison must be with a length-2 sequence"
+            return self.i == other[0] and self.j == other[1]
+        raise ValueError("A Position can only be compared with a Position-like item.")
+
     def is_between(self, pos1: Position, pos2: Position):
         """Checks whether a position is between two antipodal bounding box coordinates. Inclusive on all sides"""
         min_i, max_i = sorted((pos1.i, pos2.i))
