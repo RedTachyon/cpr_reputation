@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 import numpy as np
-from board import HarvestGame, create_board, get_neighbors, regenerate_apples, random_board, NOOP, SHOOT, Position
+from board import HarvestGame, create_board, fast_rot90, get_neighbors, regenerate_apples, random_board, NOOP, SHOOT, Position
 import matplotlib.pyplot as plt
 import pytest
 
@@ -25,6 +25,12 @@ def test_create():
     for i in range(50):
         for j in range(50):
             assert board[i, j] == ((i, j) in all_apples)
+
+
+def test_fast_rot90():
+    arr = np.arange(15).reshape((3, 5))
+    for k in range(4):
+        assert(np.rot90(arr, k) == fast_rot90(arr, k))
 
 
 def test_neighbors():
