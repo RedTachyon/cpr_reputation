@@ -1,0 +1,38 @@
+name: Lint & Test
+
+on:
+    push:
+        branches:
+            - master
+    pull_request:
+        branches:
+            - master
+
+jobs:
+    lint-test:
+        name: Lint & Test
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [ubuntu, macos]
+                python: [3.7, 3.8, 3.9]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2.3.4
+            - name: Setup Python ${{ matrix.python }}
+              uses: actions/setup-python@v2.2.1
+              with:
+                python-version: ${{ matrix.python }}
+            - name: Install Dependencies
+              run: |
+                   python -m pip install --upgrade pip
+                   pip install -r requirements.txt
+            - name: Lint with flake8
+              run: |
+                   pip install flake8
+                   flake8 --max-line-length 89 cpr_reputation/
+                   flake8 --max-line-length 89 test
+            - name: Test
+              run: |
+                   pip install pytest
+                   pytest
