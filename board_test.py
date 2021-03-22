@@ -244,44 +244,66 @@ def test_get_agent_obs_board_items(example_env1_nowalls):  # TODO add walls
     assert sorted(zip(*obs_walls)) == sorted(expected_walls)
 
 
-def test_step(example_env2_nowalls):
-    env = example_env2_nowalls
+def test_noop(example_env1_nowalls):
+    env = example_env1_nowalls
     old_agents = deepcopy(env.agents)
-    for i in range(10):
+    for i in range(4):
         env.process_action(f"Agent{i}", NOOP)
         # Nothing should change
     assert old_agents == env.agents
 
-    env.process_action("Agent0", SHOOT)
-    assert env.reputation["Agent0"] == 1
-    for i in range(1, 10):
-        assert env.reputation[f"Agent{i}"] == 0
-
+def test_go_forward(example_env1_nowalls):
+    env = example_env1_nowalls
+    # TODO: make this real
     positions = [agent.pos for _, agent in env.agents.items()]
-    for i in range(10):
+    for i in range(3, -1, -1):
         agent_id = f"Agent{i}"
-        agent = env.agents[agent_id]
         env.process_action(agent_id, GO_FORWARD)
     for position, (name, agent) in zip(positions, env.agents.items()):
-        assert position + DIRECTIONS[2] == agent.pos # down
+        assert position + DIRECTIONS[2] == agent.pos # south
 
-    # TODO: More step-wise tests
+def test_go_left(example_env1_nowalls):
+    env = example_env1_nowalls
+    positions = [agent.pos for _, agent in env.agents.items()]
+    for i in (1, 3, 2, 0):
+        env.process_action(f"Agent{i}", GO_LEFT)
+    for position, (_, agent) in zip(positions, env.agents.items()):
+        assert position + DIRECTIONS[1] == agent.pos
+
+def test_go_right(example_env2_nowalls):
+    env = example_env2_nowalls
+    ag9 = "Agent9"
+    env.process_action(ag9, GO_FORWARD)
+    env.process_action(ag9, GO_FORWARD)
+    old_pos = env.agents[ag9].pos
+    env.process_action(ag9, GO_RIGHT)
+    assert old_pos + DIRECTIONS[3] == env.agents[ag9].pos
+
+
+def test_go_forwardbackward_inverses(example_env2_nowalls):
+    env = example_env2_nowalls
+    ag9 = "Agent9"
+    old_pos = deepcopy(env.agents[ag9].pos)
+    env.process_action(ag9, GO_FORWARD)
+    env.process_action(ag9, GO_FORWARD)
+    env.process_action(ag9, GO_BACKWARD)
+    env.process_action(ag9, GO_BACKWARD)
+    assert old_pos == env.agents[ag9].pos
 
 
 def test_zap(example_env2_nowalls):
     env = example_env2_nowalls
+    env.process_action("Agent0", SHOOT)
+    assert env.reputation["Agent0"] == 1
+    for i in range(1, 10):
+        assert env.reputation[f"Agent{i}"] == 0
+        assert env.agents[f"Agent{i}"].frozen > 0
 
-    pass  # TODO: duh
-
-def test_get_beam_bounds():
-    pass # TODO
-
-def test_process_action():
-    pass # TODO
-
-def test_move_agent():
-    # TODO
-    pass
+def test_get_beam_bounds(example_env2_nowalls):
+    env = example_env2_nowalls
+    bound1, bound2 = env.get_beam_bounds("Agent9")
+    assert bound1 == (12, 6)
+    assert bound2 == (2, -4)
 
 def test_agent_initial_position():
     # TODO
