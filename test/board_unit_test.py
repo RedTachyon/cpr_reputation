@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 import numpy as np
-from board import (
+from cpr_reputation.board import (
     HarvestGame,
     create_board, fast_rot90, get_neighbors, regenerate_apples, random_board,
     NOOP, SHOOT, GO_FORWARD, GO_BACKWARD, GO_LEFT, GO_RIGHT, ROT_LEFT, ROT_RIGHT,
