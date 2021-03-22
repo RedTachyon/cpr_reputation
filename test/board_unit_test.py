@@ -4,12 +4,23 @@ from copy import deepcopy
 import numpy as np
 from cpr_reputation.board import (
     HarvestGame,
-    create_board, fast_rot90, get_neighbors, regenerate_apples, random_board,
-    NOOP, SHOOT, GO_FORWARD, GO_BACKWARD, GO_LEFT, GO_RIGHT, ROT_LEFT, ROT_RIGHT,
+    create_board,
+    fast_rot90,
+    get_neighbors,
+    regenerate_apples,
+    random_board,
+    NOOP,
+    SHOOT,
+    GO_FORWARD,
+    GO_BACKWARD,
+    GO_LEFT,
+    GO_RIGHT,
+    #    ROT_LEFT,
+    #    ROT_RIGHT,
     DIRECTIONS,
-    Position, HarvestEnv
-    )
-import matplotlib.pyplot as plt
+    Position,
+    #    HarvestEnv,
+)
 import pytest
 
 
@@ -31,6 +42,7 @@ def test_create():
     for i in range(50):
         for j in range(50):
             assert board[i, j] == ((i, j) in all_apples)
+
 
 @pytest.fixture
 def example_env1_nowalls():
@@ -58,6 +70,7 @@ def example_env1_nowalls():
         agent.rot = 2  # south
     return env
 
+
 @pytest.fixture
 def example_env2_nowalls():
     """10 agents in a 50x50 board, everyone facing south"""
@@ -66,57 +79,36 @@ def example_env2_nowalls():
         agent.rot = 2
     return env
 
+
 def test_fast_rot90():
     # should/could be a property-based test
     arr = np.arange(15).reshape((3, 5))
     for k in range(4):
-        assert(np.all(np.rot90(arr, k) == fast_rot90(arr, k)))
+        assert np.all(np.rot90(arr, k) == fast_rot90(arr, k))
 
 
 def test_get_neighbors_middle():
     neighbors = get_neighbors(Position(2, 2), size=Position(5, 5))
-    expected = [
-        (2, 2),
-        (1, 2),
-        (3, 2),
-        (2, 1),
-        (2, 3)
-    ]
+    expected = [(2, 2), (1, 2), (3, 2), (2, 1), (2, 3)]
     for pos in expected:
         assert pos in neighbors
 
 
 def test_get_neighbors_corners():
     neighbors = get_neighbors(Position(0, 0), Position(7, 7))
-    expected = [
-        (0, 0),
-        (1, 0),
-        (0, 1)
-    ]
+    expected = [(0, 0), (1, 0), (0, 1)]
     for pos in expected:
         assert pos in neighbors
 
     neighbors = get_neighbors(Position(6, 6), Position(7, 7))
-    expected = [
-        (5, 6),
-        (6, 5),
-        (6, 6)
-    ]
+    expected = [(5, 6), (6, 5), (6, 6)]
     for pos in expected:
         assert pos in neighbors
 
 
 def test_get_neighbors_radius_2():
     neighbors = get_neighbors(Position(4, 3), size=Position(5, 5), radius=2)
-    expected = [
-        (2, 3),
-        (3, 2),
-        (3, 3),
-        (3, 4),
-        (4, 2),
-        (4, 3),
-        (4, 4)
-    ]
+    expected = [(2, 3), (3, 2), (3, 3), (3, 4), (4, 2), (4, 3), (4, 4)]
     for pos in expected:
         assert pos in neighbors
 
@@ -124,7 +116,8 @@ def test_get_neighbors_radius_2():
 def test_regrow():  # TODO make deterministic
     np.random.seed(0)
     board = random_board((50, 50), prob=0.2)
-    new_board = regenerate_apples(board)  # This will fail once we fix the regrowing
+    # This will fail once we fix the regrowing
+    new_board = regenerate_apples(board)
     assert np.sum(new_board) > np.sum(board)
     assert new_board.shape == board.shape
     assert new_board.min() == 0
@@ -156,18 +149,8 @@ def test_get_agent_obs_board_items(example_env1_nowalls):  # TODO add walls
     obs_agents = np.where(obs[:, :, 1])
     obs_walls = np.where(obs[:, :, 2])
 
-    expected_apples = [
-        (19, 6),
-        (19, 8),
-        (18, 9),
-        (18, 8),
-        (18, 7),
-        (17, 8)
-    ]
-    expected_agents = [
-        (19, 10),
-        (19, 11)
-    ]
+    expected_apples = [(19, 6), (19, 8), (18, 9), (18, 8), (18, 7), (17, 8)]
+    expected_agents = [(19, 10), (19, 11)]
     expected_walls = []
 
     assert sorted(zip(*obs_apples)) == sorted(expected_apples)
@@ -188,12 +171,9 @@ def test_get_agent_obs_board_items(example_env1_nowalls):  # TODO add walls
         (17, 10),
         (17, 11),
         (17, 12),
-        (18, 11)
+        (18, 11),
     ]
-    expected_agents = [
-        (19, 9),
-        (19, 10)
-    ]
+    expected_agents = [(19, 9), (19, 10)]
     expected_walls = []
 
     assert sorted(zip(*obs_apples)) == sorted(expected_apples)
@@ -206,18 +186,8 @@ def test_get_agent_obs_board_items(example_env1_nowalls):  # TODO add walls
     obs_agents = np.where(obs[:, :, 1])
     obs_walls = np.where(obs[:, :, 2])
 
-    expected_apples = [
-        (18, 13),
-        (18, 14),
-        (19, 12),
-        (19, 14)
-    ]
-    expected_agents = [
-        (18, 9),
-        (18, 10),
-        (19, 9),
-        (19, 10)
-    ]
+    expected_apples = [(18, 13), (18, 14), (19, 12), (19, 14)]
+    expected_agents = [(18, 9), (18, 10), (19, 9), (19, 10)]
     expected_walls = []
 
     assert sorted(zip(*obs_apples)) == sorted(expected_apples)
@@ -231,12 +201,7 @@ def test_get_agent_obs_board_items(example_env1_nowalls):  # TODO add walls
     obs_walls = np.where(obs[:, :, 2])
 
     expected_apples = []
-    expected_agents = [
-        (18, 10),
-        (18, 11),
-        (19, 10),
-        (19, 11)
-    ]
+    expected_agents = [(18, 10), (18, 11), (19, 10), (19, 11)]
     expected_walls = []
 
     assert sorted(zip(*obs_apples)) == sorted(expected_apples)
@@ -252,6 +217,7 @@ def test_noop(example_env1_nowalls):
         # Nothing should change
     assert old_agents == env.agents
 
+
 def test_go_forward(example_env1_nowalls):
     env = example_env1_nowalls
     # TODO: make this real
@@ -260,7 +226,8 @@ def test_go_forward(example_env1_nowalls):
         agent_id = f"Agent{i}"
         env.process_action(agent_id, GO_FORWARD)
     for position, (name, agent) in zip(positions, env.agents.items()):
-        assert position + DIRECTIONS[2] == agent.pos # south
+        assert position + DIRECTIONS[2] == agent.pos  # south
+
 
 def test_go_left(example_env1_nowalls):
     env = example_env1_nowalls
@@ -269,6 +236,7 @@ def test_go_left(example_env1_nowalls):
         env.process_action(f"Agent{i}", GO_LEFT)
     for position, (_, agent) in zip(positions, env.agents.items()):
         assert position + DIRECTIONS[1] == agent.pos
+
 
 def test_go_right(example_env2_nowalls):
     env = example_env2_nowalls
@@ -299,11 +267,13 @@ def test_zap(example_env2_nowalls):
         assert env.reputation[f"Agent{i}"] == 0
         assert env.agents[f"Agent{i}"].frozen > 0
 
+
 def test_get_beam_bounds(example_env2_nowalls):
     env = example_env2_nowalls
     bound1, bound2 = env.get_beam_bounds("Agent9")
     assert bound1 == (12, 6)
     assert bound2 == (2, -4)
+
 
 def test_agent_initial_position():
     # TODO
