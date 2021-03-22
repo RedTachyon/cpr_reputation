@@ -384,18 +384,24 @@ class HarvestGame:
         # I checked, the direction should be correct - still tests, will be good
         board = np.rot90(full_board, rot)
 
-        agent_i, agent_j = agent.pos
+        max_i, max_j = self.size
+        if rot == 0:
+            agent_i, agent_j = agent.pos
+        elif rot == 1:
+            agent_i, agent_j = max_j-agent.pos[1]-1, agent.pos[0]
+        elif rot == 2:
+            agent_i, agent_j = max_i-agent.pos[0]-1, max_j-agent.pos[1]-1
+        else:
+            agent_i, agent_j = agent.pos[1], max_i-agent.pos[0]-1
 
         # Horizontal bounds
         bounds_i = (agent_i - self.sight_dist + 1, agent_i + 1)
         (bound_up, bound_down) = bounds_i
-        bounds_i_clipped = np.clip(bounds_i, 0, self.board.shape[0])
+        bounds_i_clipped = np.clip(bounds_i, 0, board.shape[0])
 
         bounds_j = (agent_j - self.sight_width, agent_j + self.sight_width + 1)
         (bound_left, bound_right) = bounds_j
-        bounds_j_clipped = np.clip(bounds_j, 0, self.board.shape[1])
-
-        max_i, max_j = self.size
+        bounds_j_clipped = np.clip(bounds_j, 0, board.shape[1])
 
         base_slice = board[slice(*bounds_i_clipped), slice(*bounds_j_clipped)]  # <= (20, 21)
         # breakpoint()
@@ -405,10 +411,10 @@ class HarvestGame:
         if bound_left < 0:
             padding = np.zeros((base_slice.shape[0], -bound_left, base_slice.shape[2]))
             base_slice = np.concatenate([padding, base_slice], axis=1)
-        if bound_right > self.board.shape[1]:
-            padding = np.zeros((base_slice.shape[0], max_j-bound_right, base_slice.shape[2]))
+        if bound_right > board.shape[1]:
+            padding = np.zeros((base_slice.shape[0], bound_right-max_j, base_slice.shape[2]))
             base_slice = np.concatenate([base_slice, padding], axis=1)
-        if bound_down > self.board.shape[0]:
+        if bound_down > board.shape[0]:
             raise ValueError("WTF")
 
         return base_slice  # 20 x 21
