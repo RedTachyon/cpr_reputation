@@ -2,8 +2,13 @@
 
 from copy import deepcopy
 import numpy as np
-from board import HarvestGame, create_board, fast_rot90, get_neighbors, regenerate_apples, random_board, NOOP, SHOOT, \
+from board import (
+    HarvestGame,
+    create_board, fast_rot90, get_neighbors, regenerate_apples, random_board,
+    NOOP, SHOOT, GO_FORWARD, GO_BACKWARD, GO_LEFT, GO_RIGHT, ROT_LEFT, ROT_RIGHT,
+    DIRECTIONS,
     Position, HarvestEnv
+    )
 import matplotlib.pyplot as plt
 import pytest
 
@@ -27,8 +32,8 @@ def test_create():
         for j in range(50):
             assert board[i, j] == ((i, j) in all_apples)
 
-
-def sample_env():
+@pytest.fixture
+def example_env1_nowalls():
     """
     Creates an env with 4 agents in a 4x6 grid.
     1 = apple; 2 = agent
@@ -55,15 +60,23 @@ def sample_env():
         agent.rot = 2  # south
     return env
 
+@pytest.fixture
+def example_env2_nowalls():
+    """10 agents in a 50x50 board, everyone facing south"""
+    env = HarvestGame(num_agents=10, size=(50, 50))
+    for _, agent in env.agents.items():
+        agent.rot = 2
+    return env
 
 def test_fast_rot90():
+    # should/could be a property-based test
     arr = np.arange(15).reshape((3, 5))
     for k in range(4):
         assert(np.all(np.rot90(arr, k) == fast_rot90(arr, k)))
 
 
 def test_get_neighbors_middle():
-    neighbors = get_neighbors(Position(2, 2), Position(5, 5))
+    neighbors = get_neighbors(Position(2, 2), size=Position(5, 5))
     expected = [
         (2, 2),
         (1, 2),
@@ -96,7 +109,7 @@ def test_get_neighbors_corners():
 
 
 def test_get_neighbors_radius_2():
-    neighbors = get_neighbors(Position(4, 3), Position(5, 5), radius=2)
+    neighbors = get_neighbors(Position(4, 3), size=Position(5, 5), radius=2)
     expected = [
         (2, 3),
         (3, 2),
@@ -127,7 +140,7 @@ def test_regrow():  # TODO make deterministic
 
 
 def test_get_agent_obs_board_shape():
-    env = HarvestGame(size=(100, 100), num_agents=1)
+    env = HarvestGame(size=Position(100, 100), num_agents=1)
     env.agents["Agent0"].rot = 0  # facing north
     assert env.get_agent_obs("Agent0").shape == (20, 21, 3)
     env.agents["Agent0"].rot = 1  # facing east
@@ -138,8 +151,8 @@ def test_get_agent_obs_board_shape():
     assert env.get_agent_obs("Agent0").shape == (20, 21, 3)
 
 
-def test_get_agent_obs_board_items():  # TODO add walls
-    env = sample_env()
+def test_get_agent_obs_board_items(example_env1_nowalls):  # TODO add walls
+    env = example_env1_nowalls
     obs = env.get_agent_obs("Agent3")  # facing south
     obs_apples = np.where(obs[:, :, 0])
     obs_agents = np.where(obs[:, :, 1])
@@ -233,8 +246,8 @@ def test_get_agent_obs_board_items():  # TODO add walls
     assert sorted(zip(*obs_walls)) == sorted(expected_walls)
 
 
-def test_step():
-    env = HarvestGame(num_agents=10, size=(50, 50))
+def test_step(example_env2_nowalls):
+    env = example_env2_nowalls
     old_agents = deepcopy(env.agents)
     for i in range(10):
         env.process_action(f"Agent{i}", NOOP)
@@ -246,8 +259,32 @@ def test_step():
     for i in range(1, 10):
         assert env.reputation[f"Agent{i}"] == 0
 
+    positions = [agent.pos for _, agent in env.agents.items()]
+    for i in range(10):
+        agent_id = f"Agent{i}"
+        agent = env.agents[agent_id]
+        env.process_action(agent_id, GO_FORWARD)
+    for position, (name, agent) in zip(positions, env.agents.items()):
+        assert position + DIRECTIONS[2] == agent.pos # down
+
     # TODO: More step-wise tests
 
 
-def test_zap():
+def test_zap(example_env2_nowalls):
+    env = example_env2_nowalls
+
     pass  # TODO: duh
+
+def test_get_beam_bounds():
+    pass # TODO
+
+def test_process_action():
+    pass # TODO
+
+def test_move_agent():
+    # TODO
+    pass
+
+def test_agent_initial_position():
+    # TODO
+    pass
