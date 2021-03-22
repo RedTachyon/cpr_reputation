@@ -1,4 +1,4 @@
-name: cpr_reputation
+name: cpr-reputation
 channels:
     - defaults
     - conda-forge
