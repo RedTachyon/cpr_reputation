@@ -1,0 +1,37 @@
+name: Validate
+
+on:
+    push:
+        branches:
+        - master
+    pull_request:
+        branches:
+        - master
+
+jobs:
+    lint-typecheck-test:
+        name: Lint, Typecheck, & Test
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [ubuntu-latest, macos-latest]
+                python: [3.7, 3.8]
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v2.3.4
+        - name: Setup Python ${{ matrix.python }}
+          uses: actions/setup-python@v2.2.1
+          with:
+            python-version: ${{ matrix.python }}
+        - name: Install Dependencies
+          run: |
+               python -m pip install --upgrade pip
+               pip install -r requirements.txt
+        - name: Lint with flake8
+          run: |
+               flake8 --max-line-length 120 cpr_reputation/
+               flake8 --max-line-length 120 test
+        - name: Typecheck with Pytype
+          run: pytype cpr_reputation
+        - name: Test
+          run: pytest
