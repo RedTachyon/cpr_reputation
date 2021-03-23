@@ -418,16 +418,16 @@ class HarvestGame:
         # I checked, the direction should be correct - still tests, will be good
         board = np.rot90(full_board, rot)
 
-        max_i, max_j = self.size
+        max_i, max_j = board.shape[:2]
 
         if rot == 0:
             agent_i, agent_j = agent.pos
         elif rot == 1:
-            agent_i, agent_j = max_j - agent.pos[1] - 1, agent.pos[0]
+            agent_i, agent_j = max_i - agent.pos[1] - 1, agent.pos[0]
         elif rot == 2:
             agent_i, agent_j = max_i - agent.pos[0] - 1, max_j - agent.pos[1] - 1
         else:
-            agent_i, agent_j = agent.pos[1], max_i - agent.pos[0] - 1
+            agent_i, agent_j = agent.pos[1], max_j - agent.pos[0] - 1
 
         # Horizontal bounds
         bounds_i = (agent_i - self.sight_dist + 1, agent_i + 1)
