@@ -276,5 +276,6 @@ def test_get_beam_bounds(example_env2_nowalls):
 
 
 def test_agent_initial_position():
-    # TODO
-    pass
+    env = HarvestGame(num_agents=12, size=Position(5, 5))
+    for i in range(env.num_agents):
+        assert(env.agents[f"Agent{i}"].pos == Position(i // 4, i % 4))
