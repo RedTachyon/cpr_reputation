@@ -300,6 +300,9 @@ class HarvestGame:
             if agent.pos == pos:
                 return False
 
+        for i, j in zip(*np.where(walls_board(self.size))):
+            if agent.pos == (i, j):
+                return False
         return True
 
     def _move_agent(self, agent_id: str, new_pos: Position):
