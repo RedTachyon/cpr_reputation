@@ -262,6 +262,9 @@ class HarvestGame:
         self.agents: Dict[str, Walker] = dict()
         self.reputation: Dict[str, int] = dict()
 
+        self.walls = walls_board(self.size)
+        # self.walls = np.zeros(self.size)
+
         self.reset()
 
     def __repr__(self) -> str:
@@ -301,9 +304,9 @@ class HarvestGame:
             if agent.pos == pos:
                 return False
 
-        for i, j in zip(*np.where(walls_board(self.size))):
-            if agent.pos == (i, j):
-                return False
+        if self.walls[(pos.i, pos.j)]:
+            return False
+
         return True
 
     def _move_agent(self, agent_id: str, new_pos: Position):
@@ -332,9 +335,8 @@ class HarvestGame:
         """Processes a single action for a single agent"""
         agent = self.agents[agent_id]
         pos, rot = agent.pos, agent.rot
-        if (
-            agent.frozen > 0
-        ):  # if the agent is frozen, should we avoid updating the gradient?
+        if agent.frozen > 0:
+            # if the agent is frozen, should we avoid updating the gradient?
             agent.frozen -= 1
             return 0.0
         if action == GO_FORWARD:
@@ -364,9 +366,9 @@ class HarvestGame:
             affected_agents = self.get_affected_agents(agent_id)
             for _agent in affected_agents:
                 _agent.frozen = 25
-            self.reputation[
-                agent_id
-            ] += 1  # whrow does reputation increase after shooting?
+
+            self.reputation[agent_id] += 1
+            # does reputation increase after shooting?
             # see notebook for weird results
         elif action == NOOP:
             # No-op
@@ -418,7 +420,7 @@ class HarvestGame:
         for other_agent_id, other_agent in self.agents.items():
             agent_board[other_agent.pos] = 1
 
-        wall_board = walls_board(apple_board.shape)
+        wall_board = self.walls
 
         # Add any extra layers before this line
 
@@ -462,7 +464,7 @@ class HarvestGame:
             base_slice = np.concatenate([padding, base_slice], axis=1)
         if bound_right > board.shape[1]:
             padding = np.zeros(
-                (base_slice.shape[0], bound_right - max_j, base_slice.shape[2])
+                (base_slice.shape[0], bound_right - board.shape[1], base_slice.shape[2])
             )
             base_slice = np.concatenate([base_slice, padding], axis=1)
         if bound_down > board.shape[0]:
