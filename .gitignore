@@ -6,3 +6,4 @@ animation.mp4
 .mypy_cache/
 .pytest_cache/
 .hypothesis
+*.swp
