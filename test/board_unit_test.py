@@ -124,7 +124,7 @@ def test_regrow():  # TODO make deterministic
     assert new_board.max() == 1
 
     # No apples should disappear
-    for i in range(1, 50 - 1): # 1 and 50 - 1 is for walls
+    for i in range(1, 50 - 1):  # 1 and 50 - 1 is for walls
         for j in range(1, 50 - 1):
             if board[i, j] > 0:
                 assert new_board[i, j] > 0
