@@ -222,6 +222,7 @@ def regenerate_apples(board: Board) -> Board:
     # updated_board = np.clip(board + regen_map, 0, 1).astype(int)
     updated_board = (board + regen_map > 0).astype(int)
 
+    updated_board = updated_board * (1 - walls_board(board.shape))
     return updated_board
 
 
