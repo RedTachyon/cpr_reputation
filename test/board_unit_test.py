@@ -45,7 +45,7 @@ def test_create():
 
 
 @pytest.fixture
-def example_env1_nowalls():
+def example_env1():
     """
     Creates an env with 4 agents in a 4x6 grid.
     1 = apple; 2 = agent
@@ -142,8 +142,8 @@ def test_get_agent_obs_board_shape():
     assert env.get_agent_obs("Agent0").shape == (20, 21, 3)
 
 
-def test_get_agent_obs_board_items(example_env1_nowalls):  # TODO add walls
-    env = example_env1_nowalls
+def test_get_agent_obs_board_items(example_env1):
+    env = example_env1
     obs = env.get_agent_obs("Agent3")  # facing south
     obs_apples = np.where(obs[:, :, 0])
     obs_agents = np.where(obs[:, :, 1])
@@ -151,7 +151,18 @@ def test_get_agent_obs_board_items(example_env1_nowalls):  # TODO add walls
 
     expected_apples = [(19, 6), (19, 8), (18, 9), (18, 8), (18, 7), (17, 8)]
     expected_agents = [(19, 10), (19, 11)]
-    expected_walls = []
+    expected_walls = [
+        (17, 6),
+        (17, 7),
+        (17, 8),
+        (17, 9),
+        (17, 10),
+        (17, 11),
+        (18, 6),
+        (18, 11),
+        (19, 6),
+        (19, 11),
+    ]
 
     assert sorted(zip(*obs_apples)) == sorted(expected_apples)
     assert sorted(zip(*obs_agents)) == sorted(expected_agents)
@@ -174,7 +185,20 @@ def test_get_agent_obs_board_items(example_env1_nowalls):  # TODO add walls
         (18, 11),
     ]
     expected_agents = [(19, 9), (19, 10)]
-    expected_walls = []
+    expected_walls = [
+        (15, 9),
+        (15, 10),
+        (15, 11),
+        (15, 12),
+        (16, 9),
+        (16, 12),
+        (17, 9),
+        (17, 12),
+        (18, 9),
+        (18, 12),
+        (19, 9),
+        (19, 12),
+    ]
 
     assert sorted(zip(*obs_apples)) == sorted(expected_apples)
     assert sorted(zip(*obs_agents)) == sorted(expected_agents)
@@ -188,7 +212,16 @@ def test_get_agent_obs_board_items(example_env1_nowalls):  # TODO add walls
 
     expected_apples = [(18, 13), (18, 14), (19, 12), (19, 14)]
     expected_agents = [(18, 9), (18, 10), (19, 9), (19, 10)]
-    expected_walls = []
+    expected_walls = [
+        (18, 9),
+        (18, 10),
+        (18, 11),
+        (18, 12),
+        (18, 13),
+        (18, 14),
+        (19, 9),
+        (19, 14),
+    ]
 
     assert sorted(zip(*obs_apples)) == sorted(expected_apples)
     assert sorted(zip(*obs_agents)) == sorted(expected_agents)
@@ -202,15 +235,15 @@ def test_get_agent_obs_board_items(example_env1_nowalls):  # TODO add walls
 
     expected_apples = []
     expected_agents = [(18, 10), (18, 11), (19, 10), (19, 11)]
-    expected_walls = []
+    expected_walls = [(18, 8), (18, 9), (18, 10), (18, 11), (19, 8), (19, 11)]
 
     assert sorted(zip(*obs_apples)) == sorted(expected_apples)
     assert sorted(zip(*obs_agents)) == sorted(expected_agents)
     assert sorted(zip(*obs_walls)) == sorted(expected_walls)
 
 
-def test_noop(example_env1_nowalls):
-    env = example_env1_nowalls
+def test_noop(example_env1):
+    env = example_env1
     old_agents = deepcopy(env.agents)
     for i in range(4):
         env.process_action(f"Agent{i}", NOOP)
@@ -218,8 +251,8 @@ def test_noop(example_env1_nowalls):
     assert old_agents == env.agents
 
 
-def test_go_forward(example_env1_nowalls):
-    env = example_env1_nowalls
+def test_go_forward(example_env1):
+    env = example_env1
     # TODO: make this real
     positions = [agent.pos for _, agent in env.agents.items()]
     for i in range(3, -1, -1):
@@ -229,8 +262,8 @@ def test_go_forward(example_env1_nowalls):
         assert position + DIRECTIONS[2] == agent.pos  # south
 
 
-def test_go_left(example_env1_nowalls):
-    env = example_env1_nowalls
+def test_go_left(example_env1):
+    env = example_env1
     positions = [agent.pos for _, agent in env.agents.items()]
     for i in (1, 3, 2, 0):
         env.process_action(f"Agent{i}", GO_LEFT)
@@ -278,4 +311,4 @@ def test_get_beam_bounds(example_env2_nowalls):
 def test_agent_initial_position():
     env = HarvestGame(num_agents=12, size=Position(5, 5))
     for i in range(env.num_agents):
-        assert(env.agents[f"Agent{i}"].pos == Position(i // 4, i % 4))
+        assert env.agents[f"Agent{i}"].pos == Position(i // 4, i % 4)

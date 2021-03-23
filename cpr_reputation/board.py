@@ -44,9 +44,6 @@ cmap = mpl.colors.ListedColormap(["white", "red", "green"])
 Board = np.ndarray
 
 
-# Position = Tuple[int, int]
-
-
 class Position(namedtuple("Position", ["i", "j"])):
     def __add__(self, other):
         if isinstance(other, Position):
@@ -116,7 +113,6 @@ def fast_rot90(array: np.ndarray, k: int):
     UPDATE: rot90 also makes in noncontiguous, nvm it's just faster.
     Still, we need to profile both options in a full context.
     """
-    # TODO: test this for equality with np.rot90
     if (k % 4) == 0:
         return array[:]
     elif (k % 4) == 1:
@@ -132,9 +128,6 @@ class Walker:
     pos: Position
     rot: int
     frozen: int = 0
-    #
-    # def __repr__(self) -> str:
-    #     return f"Agent(pos={self.pos}, frozen={self.frozen > 0})"
 
 
 def in_bounds(pos: Position, size: Position) -> bool:
@@ -149,7 +142,6 @@ def get_neighbors(pos: Position, size: Position, radius: int = 1) -> List[Positi
     the boundaries of the board"""
     if radius == 1:  # Default
         increments = [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)]
-
         return [pos + inc for inc in increments if in_bounds(pos + inc, size)]
     else:
         row0, col0 = pos
@@ -233,6 +225,18 @@ def regenerate_apples(board: Board) -> Board:
     return updated_board
 
 
+def walls_board(size: Tuple[int, int]) -> Board:
+    walls = np.zeros(size)
+    row_bound, col_bound = size
+    for i in range(row_bound):
+        walls[i, 0] = 1
+        walls[i, col_bound - 1] = 1
+    for j in range(col_bound):
+        walls[0, j] = 1
+        walls[row_bound - 1, j] = 1
+    return walls
+
+
 class HarvestGame:
     def __init__(
         self,
@@ -254,10 +258,13 @@ class HarvestGame:
         self.num_crosses = num_crosses
 
         self.board = np.array([[]])
-        self.agents: Dict[str, Walker] = {}
-        self.reputation = {}
+        self.agents: Dict[str, Walker] = dict()
+        self.reputation: Dict[str, int] = dict()
 
         self.reset()
+
+    def __repr__(self) -> str:
+        return f"HarvestGame(num_agents={self.num_agents}, size={self.size})"
 
     def reset(self):
         self.board = random_board(self.size, self.num_crosses)
@@ -303,14 +310,16 @@ class HarvestGame:
 
     def _set_rotation(self, agent_id: str, rot: int):
         """Debugging/testing method"""
+        if rot not in range(4):
+            raise ValueError("rot must be % 4")
         agent = self.agents[agent_id]
-        assert rot in (0, 1, 2, 3)
         agent.rot = rot
 
     def _rotate_agent(self, agent_id: str, direction: int):
         """Rotates an agent left or right"""
+        if direction not in (-1, 1):
+            raise ValueError("direction must be in -1, 1")
         agent = self.agents[agent_id]
-        assert direction in [-1, 1]
         # -1: rotate left
         #  1: rotate right
         agent.rot = (agent.rot + direction) % 4
@@ -405,14 +414,14 @@ class HarvestGame:
         for other_agent_id, other_agent in self.agents.items():
             agent_board[other_agent.pos] = 1
 
-        wall_board = np.zeros_like(apple_board)  # TODO: use actual walls
+        wall_board = walls_board(apple_board.shape)
 
         # Add any extra layers before this line
 
         full_board = np.stack(
             [apple_board, agent_board, wall_board], axis=-1
         )  # H x W x 3
-        rot = self.agents[agent_id].rot
+        rot = agent.rot
 
         # Rotate the board so that the agent is always pointing up.
         # I checked, the direction should be correct - still tests, will be good
