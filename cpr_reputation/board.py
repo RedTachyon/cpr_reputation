@@ -448,7 +448,7 @@ class HarvestGame:
         if bound_left < 0:
             padding = np.zeros((base_slice.shape[0], -bound_left, base_slice.shape[2]))
             base_slice = np.concatenate([padding, base_slice], axis=1)
-        if bound_right > max_j: # board.shape[1]:
+        if bound_right > max_j:  # board.shape[1]:
             padding = np.zeros(
                 (base_slice.shape[0], bound_right - max_j, base_slice.shape[2])
             )

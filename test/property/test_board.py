@@ -1,4 +1,4 @@
-from cpr_reputation.board import HarvestGame
+from cpr_reputation.board import HarvestGame, Position
 
 from hypothesis import given
 from hypothesis.strategies import integers
@@ -20,21 +20,21 @@ def test_get_agent_obs_board_shape(
 ):
     env1 = HarvestGame(
         num_agents=num_agents,
-        size=(size_i, size_j),
+        size=Position(size_i, size_j),
         sight_width=sight_width,
         sight_dist=sight_dist
     )
-    ag0 = f"Agent0"
+    ag0 = "Agent0"
     constant_obs_shape = (sight_dist, 2 * sight_width + 1, 3)
-    env1.agents[ag0].rot = 0 # facing north
-    assert env1.get_agent_obs(ag0).shape == (sight_dist, 2 * sight_width + 1, 3), \
+    env1.agents[ag0].rot = 0  # facing north
+    assert env1.get_agent_obs(ag0).shape == constant_obs_shape, \
         "north facing window doesn't work"
-    env1.agents[ag0].rot = 1 # facing east
-    assert env1.get_agent_obs(ag0).shape == (2 * sight_width + 1, sight_dist, 3), \
+    env1.agents[ag0].rot = 1  # facing east
+    assert env1.get_agent_obs(ag0).shape == constant_obs_shape, \
         "east facing window doesn't work"
-    env1.agents[ag0].rot = 2 # facing south
-    assert env1.get_agent_obs(ag0).shape == (sight_dist, 2 * sight_width + 1, 3), \
+    env1.agents[ag0].rot = 2  # facing south
+    assert env1.get_agent_obs(ag0).shape == constant_obs_shape, \
         "south facing window doesn't work"
-    env1.agents[ag0].rot = 3 # facing west
-    assert env1.get_agent_obs(ag0).shape == (2 * sight_width + 1, sight_dist, 3), \
+    env1.agents[ag0].rot = 3  # facing west
+    assert env1.get_agent_obs(ag0).shape == constant_obs_shape, \
         "west facing window doesn't work"
