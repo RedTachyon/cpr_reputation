@@ -419,6 +419,7 @@ class HarvestGame:
         board = np.rot90(full_board, rot)
 
         max_i, max_j = self.size
+
         if rot == 0:
             agent_i, agent_j = agent.pos
         elif rot == 1:

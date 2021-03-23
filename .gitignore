@@ -5,3 +5,4 @@ animation.mp4
 .pytype/
 .mypy_cache/
 .pytest_cache/
+.hypothesis
