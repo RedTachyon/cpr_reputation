@@ -29,8 +29,8 @@ jobs:
                pip install -r requirements.txt
         - name: Lint with flake8
           run: |
-               flake8 --max-line-length 120 cpr_reputation/
-               flake8 --max-line-length 120 test
+               flake8 cpr_reputation/
+               flake8 120 test/
         - name: Typecheck with Pytype
           run: pytype cpr_reputation
         - name: Unit Test
