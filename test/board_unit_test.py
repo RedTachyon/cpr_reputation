@@ -185,7 +185,7 @@ def test_get_agent_obs_board_items(example_env1):
         (18, 11),
     ]
     expected_agents = [(t[0], t[1]) for t in [(19, 9), (19, 10)]]
-    expected_walls = [(x - 1, y + 1) for x,y in [
+    expected_walls = [(x - 1, y + 1) for x, y in [
         (15, 9),
         (15, 10),
         (15, 11),
