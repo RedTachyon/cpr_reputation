@@ -195,7 +195,7 @@ def agent_initial_position(i: int, total: int) -> Position:
     idx_map = np.arange(layout_base ** 2).reshape(layout_base, layout_base)
     (rows, cols) = np.where(idx_map == i)
     row, col = rows[0], cols[0]
-    return Position(row, col)
+    return Position(row, col) + (1, 1)
 
 
 @vectorize
