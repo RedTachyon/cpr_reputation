@@ -33,5 +33,7 @@ jobs:
                flake8 --max-line-length 120 test
         - name: Typecheck with Pytype
           run: pytype cpr_reputation
-        - name: Test
-          run: pytest
+        - name: Unit Test
+          run: pytest test/unit
+        - name: Property Test
+          run: pytest test/property
