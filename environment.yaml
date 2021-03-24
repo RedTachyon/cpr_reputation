@@ -10,4 +10,5 @@ dependencies:
     - black
     - flake8
     - pytest
+    - hypothesis
     - pytype

@@ -131,7 +131,7 @@ def test_regrow():  # TODO make deterministic
 
 
 def test_get_agent_obs_board_shape():
-    env = HarvestGame(size=Position(100, 100), num_agents=1)
+    env = HarvestGame(size=Position(100, 100), num_agents=1, sight_dist=20, sight_width=10)
     env.agents["Agent0"].rot = 0  # facing north
     assert env.get_agent_obs("Agent0").shape == (20, 21, 3)
     env.agents["Agent0"].rot = 1  # facing east
