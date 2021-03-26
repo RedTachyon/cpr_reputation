@@ -2,10 +2,13 @@
 
 from cpr_reputation.learning import HarvestEnv
 
-from ray.rllib.agents import pg
+import numpy as np
+import ray
+from ray.rllib.agents import ppo
+# from ray.rllib.models.utils import get_filter_config
 from ray.tune.registry import register_env
 # from ray import tune
-from gym.spaces import Discrete
+from gym.spaces import Discrete, Box
 
 defaults_ini = {
     "num_agents": 4,
@@ -21,9 +24,7 @@ if __name__ == "__main__":
     # tune.run("harvest", {"framework": "torch"})
     walker1 = (
         None,
-        Discrete(
-            (2 * defaults_ini["sight_width"] + 1) * defaults_ini["sight_dist"] * 3
-        ),  # obs
+        Box(0., 1., (2 * defaults_ini["sight_width"] + 1, defaults_ini["sight_dist"], 3), np.float64),  # obs
         Discrete(8),  # action
         dict(),
     )
@@ -33,9 +34,17 @@ if __name__ == "__main__":
             "policy_mapping_fn": lambda agent_id: "walker1",
         },
         "framework": "torch",
+        "model": {
+            "dim": 3,
+            "conv_filters": [
+                [16, [4, 4], 1],
+                [32, [11, 10], 1],
+                # [256, [11, 11], 1]
+            ]
+        },
     }
-
-    trainer = pg.PGTrainer(env="harvest", config=config)
+    ray.init()
+    trainer = ppo.PPOTrainer(env="harvest", config=config)
 
     while True:
         print(trainer.train())
