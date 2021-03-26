@@ -24,7 +24,12 @@ if __name__ == "__main__":
     # tune.run("harvest", {"framework": "torch"})
     walker1 = (
         None,
-        Box(0., 1., (2 * defaults_ini["sight_width"] + 1, defaults_ini["sight_dist"], 3), np.float64),  # obs
+        Box(
+            0.,
+            1.,
+            (defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1, 3),
+            np.float32
+        ),  # obs
         Discrete(8),  # action
         dict(),
     )
@@ -38,8 +43,7 @@ if __name__ == "__main__":
             "dim": 3,
             "conv_filters": [
                 [16, [4, 4], 1],
-                [32, [11, 10], 1],
-                # [256, [11, 11], 1]
+                [32, [defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1], 1],
             ]
         },
     }

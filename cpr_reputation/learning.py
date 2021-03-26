@@ -30,7 +30,7 @@ class HarvestEnv(MultiAgentEnv):
             for agent_id, _ in self.game.agents.items()
         }
 
-        done = {agent_id: self.time > 1000 for agent_id in self.game.agents}
+        done = {agent_id: self.time > 1000 for agent_id, _ in self.game.agents.items()}
         done["__all__"] = self.time > 1000  # Required for rllib (I think)
         info = {}
         self.time += 1
