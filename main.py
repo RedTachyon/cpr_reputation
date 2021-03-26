@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
 
-import os
-from datetime import datetime
-import json
-import io
-from pathlib import Path
-
 import numpy as np
 import ray
 from ray.rllib.agents import ppo
@@ -31,7 +25,6 @@ defaults_ini = {
 if __name__ == "__main__":
     register_env("harvest", lambda config: HarvestEnv(config, **defaults_ini))
 
-    # tune.run("harvest", {"framework": "torch"})
     walker1 = (
         None,
         Box(
