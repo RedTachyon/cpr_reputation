@@ -9,6 +9,7 @@ dependencies:
     - numba=0.53.0
     - matplotlib=3.3.4
     - pytorch=1.8.1
+    - tensorboard
     - black
     - flake8
     - pytest

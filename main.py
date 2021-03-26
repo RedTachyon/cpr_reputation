@@ -1,14 +1,24 @@
 #!/usr/bin/env python3
 
-from cpr_reputation.learning import HarvestEnv
+import os
+from datetime import datetime
+import json
+import io
+from pathlib import Path
 
 import numpy as np
 import ray
 from ray.rllib.agents import ppo
-# from ray.rllib.models.utils import get_filter_config
 from ray.tune.registry import register_env
-# from ray import tune
+from ray.tune.logger import UnifiedLogger
 from gym.spaces import Discrete, Box
+
+from cpr_reputation.learning import HarvestEnv
+
+
+def path_from_ini(x: dict) -> str:
+    return "".join(f"{key}={value}" for key, value in x.items())
+
 
 defaults_ini = {
     "num_agents": 4,
@@ -25,10 +35,10 @@ if __name__ == "__main__":
     walker1 = (
         None,
         Box(
-            0.,
-            1.,
+            0.0,
+            1.0,
             (defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1, 3),
-            np.float32
+            np.float32,
         ),  # obs
         Discrete(8),  # action
         dict(),
@@ -43,12 +53,24 @@ if __name__ == "__main__":
             "dim": 3,
             "conv_filters": [
                 [16, [4, 4], 1],
-                [32, [defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1], 1],
-            ]
+                [
+                    32,
+                    [defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1],
+                    1,
+                ],
+            ],
         },
     }
-    ray.init()
-    trainer = ppo.PPOTrainer(env="harvest", config=config)
 
+    ray.init()
+    trainer = ppo.PPOTrainer(
+        env="harvest",
+        config=config,
+        logger_creator=lambda cfg: UnifiedLogger(cfg, "log"),
+    )
+
+    results = list()
     while True:
-        print(trainer.train())
+        result_dict = trainer.train()
+        results.append(result_dict)
+        print(result_dict)
