@@ -1,14 +1,24 @@
 name: cpr-reputation
 channels:
-    - defaults
+    - anaconda
+    - conda-forge
+    - pytorch
+    - coecms
 dependencies:
     - python=3.8
-    - numpy=1.20.1
     - scipy=1.6.1
     - numba=0.53.0
     - matplotlib=3.3.4
+    - celluloid=0.2.0
+    - pytorch=1.8.1
+    - tensorboard
     - black
     - flake8
     - pytest
     - hypothesis
     - pytype
+    - ninja
+    - pip
+    - pip:
+        - ray[rllib]==1.2.0
+        - numpy==1.20.1
