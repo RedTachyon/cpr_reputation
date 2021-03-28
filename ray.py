@@ -36,6 +36,7 @@ if __name__ == "__main__":
         Discrete(8),  # action
         dict(),
     )
+    # walkers = {f"Agent{k}": walker1 for k in range(defaults_ini["num_agents"])}
     config = {
         "multiagent": {
             "policies": {"walker1": walker1},
