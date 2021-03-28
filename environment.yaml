@@ -3,11 +3,13 @@ channels:
     - anaconda
     - conda-forge
     - pytorch
+    - coecms
 dependencies:
     - python=3.8
     - scipy=1.6.1
     - numba=0.53.0
     - matplotlib=3.3.4
+    - celluloid=0.2.0
     - pytorch=1.8.1
     - tensorboard
     - black

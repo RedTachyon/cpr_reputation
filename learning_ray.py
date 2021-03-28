@@ -7,7 +7,7 @@ from ray.tune.registry import register_env
 from ray.tune.logger import UnifiedLogger
 from gym.spaces import Discrete, Box
 
-from cpr_reputation.learning import HarvestEnv
+from cpr_reputation.environments import HarvestEnv
 
 
 def path_from_ini(x: dict) -> str:
