@@ -5,9 +5,9 @@ from hypothesis.strategies import integers
 
 
 @given(
-    num_agents=integers(min_value=1, max_value=10),
-    size_i=integers(min_value=11, max_value=1000),
-    size_j=integers(min_value=11, max_value=1000),
+    num_agents=integers(min_value=1, max_value=16),
+    size_i=integers(min_value=11, max_value=100),
+    size_j=integers(min_value=11, max_value=100),
     sight_width=integers(min_value=2, max_value=50),
     sight_dist=integers(min_value=3, max_value=100)
 )

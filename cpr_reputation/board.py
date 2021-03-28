@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Optional
 
 import numpy as np
 from numba import vectorize
@@ -39,7 +39,7 @@ DIRECTIONS = [
 ]
 
 # noinspection PyUnresolvedReferences
-cmap = mpl.colors.ListedColormap(["white", "red", "green"])
+cmap = mpl.colors.ListedColormap(["white", "red", "green", "gray"])
 
 Board = np.ndarray
 
@@ -170,17 +170,17 @@ def random_board(size: Tuple[int, int], prob: float = 0.1) -> Board:
     return (prob_map < prob).astype(np.int8)
 
 
-# def random_crosses(size: Position,
-#                    num_crosses: int = 10) -> Board:
-#     """Creates a board with random cross-shaped apple patterns"""
-#     all_positions = [(row, col) for col in range(size[1]) for row in range(size[0])]
-#     random_idx = np.random.choice(
-#                       range(len(all_positions)),
-#                       num_crosses,
-#                       replace=False)
-#     initial_apples = [all_positions[i] for i in random_idx]
-#     board = create_board(size, initial_apples)
-#     return board
+def random_crosses(size: Position,
+                   num_crosses: int = 10) -> Board:
+    """Creates a board with random cross-shaped apple patterns"""
+    all_positions = [(row, col) for col in range(size[1]) for row in range(size[0])]
+    random_idx = np.random.choice(
+                      range(len(all_positions)),
+                      num_crosses,
+                      replace=False)
+    initial_apples = [all_positions[i] for i in random_idx]
+    board = create_board(size, initial_apples)
+    return board
 
 
 def agent_initial_position(i: int, total: int) -> Position:
@@ -271,7 +271,7 @@ class HarvestGame:
         return f"HarvestGame(num_agents={self.num_agents}, size={self.size})"
 
     def reset(self):
-        self.board = random_board(self.size, self.num_crosses)
+        self.board = random_crosses(self.size, self.num_crosses)
         self.agents = {
             f"Agent{i}": Walker(
                 pos=agent_initial_position(i, self.num_agents),
@@ -285,13 +285,19 @@ class HarvestGame:
         for name, agent in self.agents.items():
             self.board[agent.pos] = 0
 
+        self.board[self.walls.astype(bool)] = 0
+
         self.reputation = {f"Agent{i}": 0 for i in range(self.num_agents)}
 
-    def render(self, ax: plt.Axes):  # TODO: make it usable without an axes
+    def render(self, ax: Optional[plt.Axes] = None):
         """Writes the image to a pyplot axes"""
-        board = self.board[:]
+        if ax is None:
+            fig, ax = plt.subplots()
+        board = self.board.copy()
         for name, agent in self.agents.items():
             board[agent.pos] = 2
+
+        board[self.walls.astype(bool)] = 3
         ax.cla()
         ax.imshow(board, cmap=cmap)
 
@@ -372,7 +378,7 @@ class HarvestGame:
             # see notebook for weird results
         elif action == NOOP:
             # No-op
-            pass
+            return 0.0
         else:
             raise ValueError(f"Invalid action {action}")
 
@@ -472,37 +478,3 @@ class HarvestGame:
             raise ValueError("WTF")
 
         return base_slice  # 20 x 21
-
-
-class MultiAgentEnv:  # Placeholder
-    pass
-
-
-class HarvestEnv(MultiAgentEnv):
-    def __init__(self, *args, **kwargs):
-        self.time = 0
-        self.game = HarvestGame(*args, **kwargs)
-
-    def reset(self) -> Dict[str, np.ndarray]:
-        self.game.reset()
-        self.time = 0
-        return {
-            agent_id: self.game.get_agent_obs(agent_id) for agent_id in self.game.agents
-        }
-
-    def step(self, actions: Dict[str, int]):
-        rewards = {agent_id: 0.0 for agent_id in self.game.agents}
-        for (agent_id, action) in actions.items():
-            reward = self.game.process_action(agent_id, action)
-            rewards[agent_id] += reward
-
-        obs = {
-            agent_id: self.game.get_agent_obs(agent_id) for agent_id in self.game.agents
-        }
-
-        done = {agent_id: self.time > 1000 for agent_id in self.game.agents}
-        done["__all__"] = self.time > 1000  # Required for rllib (I think)
-        info = {}
-        self.time += 1
-
-        return obs, rewards, done, info

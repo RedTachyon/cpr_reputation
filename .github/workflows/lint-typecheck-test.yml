@@ -14,8 +14,8 @@ jobs:
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
-                os: [ubuntu-latest, macos-latest]
-                python: [3.7, 3.8]
+                os: [ubuntu-latest]
+                python: [3.8]
         steps:
         - name: Checkout
           uses: actions/checkout@v2.3.4
@@ -29,8 +29,7 @@ jobs:
                pip install -r requirements.txt
         - name: Lint with flake8
           run: |
-               flake8 cpr_reputation/
-               flake8 test/
+               flake8
         - name: Typecheck with Pytype
           run: pytype cpr_reputation
         - name: Unit Test
