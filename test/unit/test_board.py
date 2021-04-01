@@ -318,7 +318,6 @@ def test_regenerate_apples_no_step():
 def test_regenerate_apples_with_step():
     env = HarvestEnv(config={}, num_agents=1, size=(20, 20))
     board_beginning = deepcopy(env.board)
-    agent = "Agent0"
 
     # consume the apples in each cell in the first 15/20 rows
     for i in range(15):
@@ -334,16 +333,3 @@ def test_regenerate_apples_with_step():
         env.step({'Agent0': NOOP})
     board_end = deepcopy(env.board)
     assert(board_end.sum() > board_middle.sum())
-
-
-
-
-
-
-
-
-
-
-
-
-
