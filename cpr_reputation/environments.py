@@ -16,7 +16,7 @@ class HarvestEnv(RayMultiAgentEnv):
         self.original_board = np.copy(self.game.board)
 
         self.observation_space = Box(
-            0., 1., (self.game.sight_dist * (self.game.sight_width * 2 + 1),)
+            0, 1, (self.game.sight_dist * (self.game.sight_width * 2 + 1),)
         )
         self.action_space = Discrete(8)
 

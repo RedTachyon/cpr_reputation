@@ -299,37 +299,34 @@ def test_agent_initial_position():
         assert env.agents[f"Agent{i}"].pos == Position(i // 4 + 1, i % 4 + 1)
 
 
-def test_regenerate_apples_no_step():
-    board = random_board((50, 50), prob=0.2)
-    # This will fail once we fix the regrowing
-    new_board = regenerate_apples(board)
-    assert np.equals(new_board, board)  # no new apples should have spawned
+def test_apples_do_not_disappear_on_step():
+    env = HarvestEnv(config={}, num_agents=1, size=(20, 20))
+    board = deepcopy(env.game.board)
+    for step in range(100):
+        env.step(actions={'Agent0': NOOP})
+    new_board = env.game.board
+    assert np.equal(new_board, board).all()  # no new apples should have spawned
     assert new_board.shape == board.shape
     assert new_board.min() == 0
     assert new_board.max() == 1
 
-    # No apples should disappear
-    for i in range(1, 50 - 1):  # 1 and 50 - 1 is for walls
-        for j in range(1, 50 - 1):
-            if board[i, j] > 0:
-                assert new_board[i, j] > 0
-
 
 def test_regenerate_apples_with_step():
     env = HarvestEnv(config={}, num_agents=1, size=(20, 20))
-    board_beginning = deepcopy(env.board)
+    env.game.agents['Agent0'].rot = 2
+    board_beginning = deepcopy(env.game.board)
 
     # consume the apples in each cell in the first 15/20 rows
     for i in range(15):
-        actions = {'Agent0': 1 if i % 2 == 0 else 3}
+        actions = {'Agent0': GO_LEFT if i % 2 == 0 else GO_RIGHT}
         for j in range(20):
             env.step(actions)
-        env.step({'Agent0': 2})
-    board_middle = deepcopy(env.board)
+        env.step({'Agent0': GO_FORWARD})
+    board_middle = deepcopy(env.game.board)
     assert(board_middle.sum() < board_beginning.sum())
 
     # let some apples regrow
     for step in range(100):
         env.step({'Agent0': NOOP})
-    board_end = deepcopy(env.board)
+    board_end = deepcopy(env.game.board)
     assert(board_end.sum() > board_middle.sum())

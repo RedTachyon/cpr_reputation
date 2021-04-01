@@ -220,9 +220,10 @@ def regenerate_apples(board: Board) -> Board:
     rand = np.random.rand(*neighbor_map.shape)
     regen_map = rand < prob_map
     # updated_board = np.clip(board + regen_map, 0, 1).astype(int)
-    updated_board = (board + regen_map > 0).astype(int)
+    updated_board = (board + regen_map > 0)
 
     updated_board = updated_board * (1 - walls_board(board.shape))
+    updated_board = updated_board.astype(int)
     return updated_board
 
 
