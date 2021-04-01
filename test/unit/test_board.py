@@ -7,8 +7,6 @@ from cpr_reputation.board import (
     create_board,
     fast_rot90,
     get_neighbors,
-    regenerate_apples,
-    random_board,
     NOOP,
     SHOOT,
     GO_FORWARD,
@@ -326,7 +324,7 @@ def test_regenerate_apples_with_step():
     assert(board_middle.sum() < board_beginning.sum())
 
     # let some apples regrow
-    for step in range(100):
+    for step in range(500):
         env.step({'Agent0': NOOP})
     board_end = deepcopy(env.game.board)
     assert(board_end.sum() > board_middle.sum())
