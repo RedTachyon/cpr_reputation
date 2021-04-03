@@ -11,3 +11,4 @@ log/
 .env
 WANDB_TOKEN
 wandb/
+.DS_Store
