@@ -7,8 +7,6 @@ from cpr_reputation.board import (
     create_board,
     fast_rot90,
     get_neighbors,
-    regenerate_apples,
-    random_board,
     NOOP,
     SHOOT,
     GO_FORWARD,
@@ -22,6 +20,8 @@ from cpr_reputation.board import (
     #    HarvestEnv,
 )
 import pytest
+
+from cpr_reputation.environments import HarvestEnv
 
 
 def test_init():
@@ -111,23 +111,6 @@ def test_get_neighbors_radius_2():
     expected = [(2, 3), (3, 2), (3, 3), (3, 4), (4, 2), (4, 3), (4, 4)]
     for pos in expected:
         assert pos in neighbors
-
-
-def test_regrow():  # TODO make deterministic
-    np.random.seed(0)
-    board = random_board((50, 50), prob=0.2)
-    # This will fail once we fix the regrowing
-    new_board = regenerate_apples(board)
-    assert np.sum(new_board) > np.sum(board)
-    assert new_board.shape == board.shape
-    assert new_board.min() == 0
-    assert new_board.max() == 1
-
-    # No apples should disappear
-    for i in range(1, 50 - 1):  # 1 and 50 - 1 is for walls
-        for j in range(1, 50 - 1):
-            if board[i, j] > 0:
-                assert new_board[i, j] > 0
 
 
 def test_get_agent_obs_board_shape():
@@ -312,3 +295,36 @@ def test_agent_initial_position():
     env = HarvestGame(num_agents=12, size=Position(5, 5))
     for i in range(env.num_agents):
         assert env.agents[f"Agent{i}"].pos == Position(i // 4 + 1, i % 4 + 1)
+
+
+def test_apples_do_not_disappear_on_step():
+    env = HarvestEnv(config={}, num_agents=1, size=(20, 20))
+    board = deepcopy(env.game.board)
+    for step in range(100):
+        env.step(actions={'Agent0': NOOP})
+    new_board = env.game.board
+    assert np.equal(new_board, board).all()  # no new apples should have spawned
+    assert new_board.shape == board.shape
+    assert new_board.min() == 0
+    assert new_board.max() == 1
+
+
+def test_regenerate_apples_with_step():
+    env = HarvestEnv(config={}, num_agents=1, size=(20, 20))
+    env.game.agents['Agent0'].rot = 2
+    board_beginning = deepcopy(env.game.board)
+
+    # consume the apples in each cell in the first 15/20 rows
+    for i in range(15):
+        actions = {'Agent0': GO_LEFT if i % 2 == 0 else GO_RIGHT}
+        for j in range(20):
+            env.step(actions)
+        env.step({'Agent0': GO_FORWARD})
+    board_middle = deepcopy(env.game.board)
+    assert(board_middle.sum() < board_beginning.sum())
+
+    # let some apples regrow
+    for step in range(500):
+        env.step({'Agent0': NOOP})
+    board_end = deepcopy(env.game.board)
+    assert(board_end.sum() > board_middle.sum())
