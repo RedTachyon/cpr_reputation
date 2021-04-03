@@ -319,12 +319,15 @@ def test_regenerate_apples_with_step():
         actions = {'Agent0': GO_LEFT if i % 2 == 0 else GO_RIGHT}
         for j in range(19):
             env.step(actions)
-        env.step({'Agent0': GO_FORWARD})
+        if actions["Agent0"] == GO_LEFT:
+            env.step({"Agent0": GO_FORWARD})
+        else:  # actions["Agent0"] == GO_RIGHT
+            env.step({"Agent0": GO_BACKWARD})
     board_middle = deepcopy(env.game.board)
-    assert(board_middle.sum() < board_beginning.sum())
+    assert board_middle.sum() < board_beginning.sum()
 
     # let some apples regrow
     for step in range(1000):
         env.step({'Agent0': NOOP})
     board_end = deepcopy(env.game.board)
-    assert(board_end.sum() > board_middle.sum())
+    assert board_end.sum() > board_middle.sum()
