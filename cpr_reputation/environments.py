@@ -1,5 +1,6 @@
 from typing import Dict
 import numpy as np
+from numpy.random import permutation
 from ray.rllib.env import MultiAgentEnv as RayMultiAgentEnv
 from cpr_reputation.board import HarvestGame
 
@@ -21,7 +22,10 @@ class HarvestEnv(RayMultiAgentEnv):
 
     def step(self, actions: Dict[str, int]):
         rewards = {agent_id: 0.0 for agent_id in self.game.agents}
-        for (agent_id, action) in actions.items():
+        actions = list(actions.items())
+        actions = permutation(actions)
+        actions = list((pair[0], int(pair[1])) for pair in actions)
+        for (agent_id, action) in actions:
             reward = self.game.process_action(agent_id, action)
             rewards[agent_id] += reward
 

@@ -7,6 +7,7 @@ celluloid==0.2.0
 # learn
 torch==1.8.1
 ray[rllib]==1.2.0
+wandb
 # dev
 tensorboard
 pytest

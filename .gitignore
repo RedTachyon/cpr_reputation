@@ -8,3 +8,6 @@ animation.mp4
 .hypothesis
 *.swp
 log/
+.env
+WANDB_TOKEN
+wandb/

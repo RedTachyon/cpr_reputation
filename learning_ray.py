@@ -5,6 +5,7 @@ import ray
 from ray.rllib.agents import ppo
 from ray.tune.registry import register_env
 from ray.tune.logger import UnifiedLogger
+from ray.tune.integration.wandb import WandbLoggerCallback
 from gym.spaces import Discrete, Box
 
 from cpr_reputation.environments import HarvestEnv
@@ -36,11 +37,11 @@ if __name__ == "__main__":
         Discrete(8),  # action
         dict(),
     )
-    # walkers = {f"Agent{k}": walker1 for k in range(defaults_ini["num_agents"])}
+    walkers = {f"Agent{k}": walker1 for k in range(defaults_ini["num_agents"])}
     config = {
         "multiagent": {
-            "policies": {"walker1": walker1},
-            "policy_mapping_fn": lambda agent_id: "walker1",
+            "policies": walkers,
+            "policy_mapping_fn": lambda agent_id: agent_id,
         },
         "framework": "torch",
         "model": {
@@ -53,14 +54,14 @@ if __name__ == "__main__":
                     1,
                 ],
             ],
-        },
+        }
     }
 
     ray.init()
     trainer = ppo.PPOTrainer(
         env="harvest",
-        config=config,
         logger_creator=lambda cfg: UnifiedLogger(cfg, "log"),
+        config=config,
     )
 
     results = list()
