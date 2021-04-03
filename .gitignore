@@ -7,3 +7,5 @@ animation.mp4
 .pytest_cache/
 .hypothesis
 *.swp
+log/*
+.DS_Store
