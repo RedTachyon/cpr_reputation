@@ -55,7 +55,6 @@ class HarvestEnv(RayMultiAgentEnv):
         #info = {"m_shots": num_shots}
         info = dict()
 
-        self.time += 1
         info = {}
 
         return obs, rewards, done, info
