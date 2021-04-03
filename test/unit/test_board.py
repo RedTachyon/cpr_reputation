@@ -314,17 +314,17 @@ def test_regenerate_apples_with_step():
     env.game.agents['Agent0'].rot = 2
     board_beginning = deepcopy(env.game.board)
 
-    # consume the apples in each cell in the first 15/20 rows
-    for i in range(15):
+    # consume the apples in each cell
+    for i in range(19):
         actions = {'Agent0': GO_LEFT if i % 2 == 0 else GO_RIGHT}
-        for j in range(20):
+        for j in range(19):
             env.step(actions)
         env.step({'Agent0': GO_FORWARD})
     board_middle = deepcopy(env.game.board)
     assert(board_middle.sum() < board_beginning.sum())
 
     # let some apples regrow
-    for step in range(500):
+    for step in range(1000):
         env.step({'Agent0': NOOP})
     board_end = deepcopy(env.game.board)
     assert(board_end.sum() > board_middle.sum())
