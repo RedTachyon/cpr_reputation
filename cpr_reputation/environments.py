@@ -47,4 +47,3 @@ class HarvestEnv(RayMultiAgentEnv):
         info = {}
 
         return obs, rewards, done, info
-
