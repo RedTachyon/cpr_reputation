@@ -299,6 +299,7 @@ def test_agent_initial_position():
 
 def test_apples_do_not_disappear_on_step():
     env = HarvestEnv(config={}, num_agents=1, size=(20, 20))
+    env.reset()
     board = deepcopy(env.game.board)
     for step in range(100):
         env.step(actions={'Agent0': NOOP})
@@ -310,24 +311,23 @@ def test_apples_do_not_disappear_on_step():
 
 
 def test_regenerate_apples_with_step():
-    env = HarvestEnv(config={}, num_agents=1, size=(20, 20))
-    env.game.agents['Agent0'].rot = 2
+    env = HarvestEnv(config={}, num_agents=18, size=(20, 20))
+    env.reset()
+
+    # start all agents along the west wall, facing east
+    for i, agent in enumerate(env.game.agents.values()):
+        agent.rot = 1
+        agent.pos = Position(i+1, 1)
     board_beginning = deepcopy(env.game.board)
 
-    # consume the apples in each cell
-    for i in range(19):
-        actions = {'Agent0': GO_LEFT if i % 2 == 0 else GO_RIGHT}
-        for j in range(19):
-            env.step(actions)
-        if actions["Agent0"] == GO_LEFT:
-            env.step({"Agent0": GO_FORWARD})
-        else:  # actions["Agent0"] == GO_RIGHT
-            env.step({"Agent0": GO_BACKWARD})
+    # walk towards the east wall
+    for i in range(17):
+        env.step({agent_id: GO_FORWARD for agent_id in env.game.agents.keys()})
     board_middle = deepcopy(env.game.board)
     assert board_middle.sum() < board_beginning.sum()
 
     # let some apples regrow
     for step in range(1000):
-        env.step({'Agent0': NOOP})
+        env.step({agent_id: NOOP for agent_id in env.game.agents.keys()})
     board_end = deepcopy(env.game.board)
     assert board_end.sum() > board_middle.sum()
