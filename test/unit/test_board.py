@@ -326,7 +326,7 @@ def test_regenerate_apples_with_step():
     # start all agents along the west wall, facing east
     for i, agent in enumerate(env.game.agents.values()):
         agent.rot = 1
-        agent.pos = Position(i+1, 1)
+        agent.pos = Position(i + 1, 1)
     board_beginning = deepcopy(env.game.board)
 
     # walk towards the east wall

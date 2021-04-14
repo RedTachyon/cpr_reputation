@@ -63,7 +63,10 @@ if args.geneity == "hom":
     }
 elif args.geneity == "het":
     walkers = {f"Agent{k}": walker1 for k in range(defaults_ini["num_agents"])}
-    multiagent: dict = {"policies": walkers, "policy_mapping_fn": lambda agent_id: agent_id}
+    multiagent: dict = {
+        "policies": walkers,
+        "policy_mapping_fn": lambda agent_id: agent_id,
+    }
 else:
     raise ValueError("Invalid argument supplied to --geneity")
 

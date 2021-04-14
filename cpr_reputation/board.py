@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Tuple, List, Dict, Optional
+from typing import Tuple, List, Dict
 
 import numpy as np
 from numba import vectorize
@@ -286,9 +286,7 @@ class HarvestGame:
 
         self.reputation = {f"Agent{i}": 0 for i in range(self.num_agents)}
 
-    def render(
-        self, fig = None, ax = None
-    ) -> tuple:
+    def render(self, fig=None, ax=None) -> tuple:
         """Writes the image to a pyplot axes"""
         if ax is None and fig is None:
             fig, ax = plt.subplots()
