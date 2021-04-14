@@ -114,7 +114,9 @@ def test_get_neighbors_radius_2():
 
 
 def test_get_agent_obs_board_shape():
-    env = HarvestGame(size=Position(100, 100), num_agents=1, sight_dist=20, sight_width=10)
+    env = HarvestGame(
+        size=Position(100, 100), num_agents=1, sight_dist=20, sight_width=10
+    )
     env.agents["Agent0"].rot = 0  # facing north
     assert env.get_agent_obs("Agent0").shape == (20, 21, 3)
     env.agents["Agent0"].rot = 1  # facing east
@@ -134,18 +136,21 @@ def test_get_agent_obs_board_items(example_env1):
 
     expected_apples = [(19, 6), (19, 8), (18, 9), (18, 8), (18, 7), (17, 8)]
     expected_agents = [(t[0], t[1]) for t in [(19, 10), (19, 11)]]
-    expected_walls = [(t[0] + 1, t[1] + 1) for t in [
-        (17, 6),
-        (17, 7),
-        (17, 8),
-        (17, 9),
-        (17, 10),
-        (17, 11),
-        (18, 6),
-        (18, 11),
-        # (19, 6),
-        # (19, 11),
-    ]]
+    expected_walls = [
+        (t[0] + 1, t[1] + 1)
+        for t in [
+            (17, 6),
+            (17, 7),
+            (17, 8),
+            (17, 9),
+            (17, 10),
+            (17, 11),
+            (18, 6),
+            (18, 11),
+            # (19, 6),
+            # (19, 11),
+        ]
+    ]
 
     # assert sorted(zip(*obs_apples)) == sorted(expected_apples)
     assert sorted(zip(*obs_agents)) == sorted(expected_agents)
@@ -168,20 +173,23 @@ def test_get_agent_obs_board_items(example_env1):
         (18, 11),
     ]
     expected_agents = [(t[0], t[1]) for t in [(19, 9), (19, 10)]]
-    expected_walls = [(x - 1, y + 1) for x, y in [
-        (15, 9),
-        (15, 10),
-        (15, 11),
-        (15, 12),
-        (16, 9),
-        (16, 12),
-        (17, 9),
-        (17, 12),
-        (18, 9),
-        (18, 12),
-        # (19, 9),
-        # (19, 12),
-    ]]
+    expected_walls = [
+        (x - 1, y + 1)
+        for x, y in [
+            (15, 9),
+            (15, 10),
+            (15, 11),
+            (15, 12),
+            (16, 9),
+            (16, 12),
+            (17, 9),
+            (17, 12),
+            (18, 9),
+            (18, 12),
+            # (19, 9),
+            # (19, 12),
+        ]
+    ]
 
     # assert sorted(zip(*obs_apples)) == sorted(expected_apples)
     assert sorted(zip(*obs_agents)) == sorted(expected_agents)
@@ -299,9 +307,10 @@ def test_agent_initial_position():
 
 def test_apples_do_not_disappear_on_step():
     env = HarvestEnv(config={}, num_agents=1, size=(20, 20))
+    env.reset()
     board = deepcopy(env.game.board)
     for step in range(100):
-        env.step(actions={'Agent0': NOOP})
+        env.step(actions={"Agent0": NOOP})
     new_board = env.game.board
     assert np.equal(new_board, board).all()  # no new apples should have spawned
     assert new_board.shape == board.shape
@@ -310,13 +319,15 @@ def test_apples_do_not_disappear_on_step():
 
 
 def test_regenerate_apples_with_step():
+    np.random.seed(1)
     env = HarvestEnv(config={}, num_agents=1, size=(20, 20))
-    env.game.agents['Agent0'].rot = 2
+    env.original_board = env.game.board.copy()
+    env.game.agents["Agent0"].rot = 2
     board_beginning = deepcopy(env.game.board)
 
     # consume the apples in each cell
     for i in range(19):
-        actions = {'Agent0': GO_LEFT if i % 2 == 0 else GO_RIGHT}
+        actions = {"Agent0": GO_LEFT if i % 2 == 0 else GO_RIGHT}
         for j in range(19):
             env.step(actions)
         if actions["Agent0"] == GO_LEFT:
@@ -328,6 +339,6 @@ def test_regenerate_apples_with_step():
 
     # let some apples regrow
     for step in range(1000):
-        env.step({'Agent0': NOOP})
+        env.step({"Agent0": NOOP})
     board_end = deepcopy(env.game.board)
     assert board_end.sum() > board_middle.sum()

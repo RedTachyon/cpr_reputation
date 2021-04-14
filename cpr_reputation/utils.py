@@ -3,14 +3,17 @@ from typing import List
 
 RAY_RESULTS = "//home/quinn/ray_results"
 
+
 def all_dirs_under(path: str):
     """Iterates through all dirs that are under the given path."""
     for cur_path, dirnames, filenames in os.walk(path):
         for dir_ in dirnames:
             yield os.path.join(cur_path, dir_)
 
+
 def latest_dir(path: str) -> str:
     return max(all_dirs_under(path), key=os.path.getmtime)
+
 
 def walk_to_checkpoint(to_restore_path: str, prefix: str = "train_fn"):
     """Return None if checkpoint isn't there."""
@@ -22,14 +25,18 @@ def walk_to_checkpoint(to_restore_path: str, prefix: str = "train_fn"):
                         if dir__.startswith("checkpoint_"):
                             return os.path.join(cur_path_, dir__)
 
-def retrieve_checkpoint1(base_path: str = RAY_RESULTS, prefix: str = "train_fn:") -> str:
-    return walk_to_checkpoint(
-        latest_dir(base_path),
-        prefix
-    )
 
-def retrieve_checkpoint(path: str = "//home/quinn/ray_results", prefix: str = "train_fn") -> str:
+def retrieve_checkpoint1(
+    base_path: str = RAY_RESULTS, prefix: str = "train_fn:"
+) -> str:
+    return walk_to_checkpoint(latest_dir(base_path), prefix)
+
+
+def retrieve_checkpoint(
+    path: str = "//home/quinn/ray_results", prefix: str = "train_fn"
+) -> str:
     """Returns a latest checkpoint unless there are none, then it returns None."""
+
     def all_dirs_under(path):
         """Iterates through all files that are under the given path."""
         for cur_path, dirnames, filenames in os.walk(path):
@@ -47,10 +54,8 @@ def retrieve_checkpoint(path: str = "//home/quinn/ray_results", prefix: str = "t
 
     sorted_checkpoints = retrieve_checkpoints(
         sorted(
-            filter(
-                lambda x: x.startswith(path + "/train_fn"), all_dirs_under(path)
-            ),
-            key=os.path.getmtime
+            filter(lambda x: x.startswith(path + "/train_fn"), all_dirs_under(path)),
+            key=os.path.getmtime,
         )
     )[::-1]
 

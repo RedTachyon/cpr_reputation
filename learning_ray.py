@@ -1,19 +1,40 @@
 #!/usr/bin/env python3
 
+import io
+from argparse import ArgumentParser
+
 import numpy as np
 import ray
 from ray.rllib.agents import ppo
 from ray.tune.registry import register_env
 from ray.tune.logger import UnifiedLogger
-from ray.tune.integration.wandb import WandbLoggerCallback
 from gym.spaces import Discrete, Box
 
 from cpr_reputation.environments import HarvestEnv
 
 
+def make_arguments() -> ArgumentParser:
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--geneity",
+        default="hom",
+        help="select `hom` for homogenous training, select `het` for heterogenous training",
+    )
+    parser.add_argument(
+        "--checkpoint-no",
+        default=1,
+        type=int,
+        help="select an integer pointing to the checkpoint you want",
+    )
+    return parser
+
+
 def path_from_ini(x: dict) -> str:
     return "".join(f"{key}={value}" for key, value in x.items())
 
+
+parser = make_arguments()
+args = parser.parse_args()
 
 defaults_ini = {
     "num_agents": 4,
@@ -23,49 +44,70 @@ defaults_ini = {
     "num_crosses": 4,
 }
 
-if __name__ == "__main__":
-    register_env("harvest", lambda config: HarvestEnv(config, **defaults_ini))
+walker1 = (
+    None,
+    Box(
+        0.0,
+        1.0,
+        (defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1, 3),
+        np.float32,
+    ),  # obs
+    Discrete(8),  # action
+    dict(),
+)
 
-    walker1 = (
-        None,
-        Box(
-            0.0,
-            1.0,
-            (defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1, 3),
-            np.float32,
-        ),  # obs
-        Discrete(8),  # action
-        dict(),
-    )
-    walkers = {f"Agent{k}": walker1 for k in range(defaults_ini["num_agents"])}
-    config = {
-        "multiagent": {
-            "policies": walkers,
-            "policy_mapping_fn": lambda agent_id: agent_id,
-        },
-        "framework": "torch",
-        "model": {
-            "dim": 3,
-            "conv_filters": [
-                [16, [4, 4], 1],
-                [
-                    32,
-                    [defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1],
-                    1,
-                ],
-            ],
-        }
+if args.geneity == "hom":
+    multiagent = {
+        "policies": {"walker": walker1},
+        "policy_mapping_fn": lambda agent_id: "walker",
     }
+elif args.geneity == "het":
+    walkers = {f"Agent{k}": walker1 for k in range(defaults_ini["num_agents"])}
+    multiagent = {"policies": walkers, "policy_mapping_fn": lambda agent_id: agent_id}
+else:
+    raise ValueError("Invalid argument supplied to --geneity")
 
-    ray.init()
-    trainer = ppo.PPOTrainer(
-        env="harvest",
-        logger_creator=lambda cfg: UnifiedLogger(cfg, "log"),
-        config=config,
-    )
+config = {
+    "multiagent": multiagent,
+    "framework": "torch",
+    "model": {
+        "dim": 3,
+        "conv_filters": [
+            [16, [4, 4], 1],
+            [32, [defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1], 1],
+        ],
+    },
+}
 
-    results = list()
-    while True:
-        result_dict = trainer.train()
-        results.append(result_dict)
-        print(result_dict)
+with io.open("WANDB_TOKEN", "r") as file:
+    WANDB_TOKEN = file.read()
+
+checkpoint_dir = (
+    f"ckpnts/checkpoint_{args.checkpoint_no}/checkpoint-{args.checkpoint_no}"
+)
+
+register_env("harvest", lambda config: HarvestEnv(config, **defaults_ini))
+
+ray.init()
+
+trainer = ppo.PPOTrainer(
+    env="harvest", logger_creator=lambda cfg: UnifiedLogger(cfg, "log"), config=config,
+)
+
+if __name__ == "__main__":
+
+    try:
+        trainer.restore(checkpoint_dir)
+    except AssertionError:
+        print(f"NOT pulling checkpoint from {checkpoint_dir}")
+    else:
+        print(f"Pulling checkpoint from {checkpoint_dir}")
+    finally:
+        counter = 0
+        while True:
+            print(f"Training - {counter} times this run")
+            result_dict = trainer.train()
+            print(result_dict)
+
+            trainer.save("ckpnts")
+            counter += 1

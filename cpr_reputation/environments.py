@@ -4,7 +4,7 @@ from typing import Dict
 
 from ray.rllib.env import MultiAgentEnv as RayMultiAgentEnv
 
-from cpr_reputation.board import HarvestGame, regenerate_apples, SHOOT
+from cpr_reputation.board import HarvestGame, regenerate_apples  # SHOOT
 
 
 class HarvestEnv(RayMultiAgentEnv):
@@ -46,13 +46,12 @@ class HarvestEnv(RayMultiAgentEnv):
         }
 
         isdone = self.time > 1000 or self.game.board.sum() == 0
-        done = {agent_id: isdone for agent_id, _ in
-                self.game.agents.items()}
+        done = {agent_id: isdone for agent_id, _ in self.game.agents.items()}
         done["__all__"] = isdone
 
-        num_shots = sum(1 for key, action in actions.items() if action == SHOOT)
+        # num_shots = sum(1 for key, action in actions.items() if action == SHOOT)
 
-        #info = {"m_shots": num_shots}
+        # info = {"m_shots": num_shots}
         info = dict()
 
         info = {}
