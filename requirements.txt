@@ -3,11 +3,11 @@ numpy==1.20.1
 scipy==1.6.1
 numba==0.53.0
 matplotlib==3.3.4
-celluloid==0.2.0
 # learn
 torch==1.8.1
 ray[rllib]==1.2.0
 wandb
+gputil
 # dev
 tensorboard
 pytest

@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 
 RAY_RESULTS = "//home/quinn/ray_results"
 
@@ -28,13 +28,13 @@ def walk_to_checkpoint(to_restore_path: str, prefix: str = "train_fn"):
 
 def retrieve_checkpoint1(
     base_path: str = RAY_RESULTS, prefix: str = "train_fn:"
-) -> str:
+) -> Optional[str]:
     return walk_to_checkpoint(latest_dir(base_path), prefix)
 
 
 def retrieve_checkpoint(
     path: str = "//home/quinn/ray_results", prefix: str = "train_fn"
-) -> str:
+) -> Optional[str]:
     """Returns a latest checkpoint unless there are none, then it returns None."""
 
     def all_dirs_under(path):

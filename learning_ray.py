@@ -57,13 +57,13 @@ walker1 = (
 )
 
 if args.geneity == "hom":
-    multiagent = {
+    multiagent: dict = {
         "policies": {"walker": walker1},
         "policy_mapping_fn": lambda agent_id: "walker",
     }
 elif args.geneity == "het":
     walkers = {f"Agent{k}": walker1 for k in range(defaults_ini["num_agents"])}
-    multiagent = {"policies": walkers, "policy_mapping_fn": lambda agent_id: agent_id}
+    multiagent: dict = {"policies": walkers, "policy_mapping_fn": lambda agent_id: agent_id}
 else:
     raise ValueError("Invalid argument supplied to --geneity")
 
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     else:
         print(f"Pulling checkpoint from {checkpoint_dir}")
     finally:
-        counter = 0
+        counter: int = 0
         while True:
             print(f"Training - {counter} times this run")
             result_dict = trainer.train()

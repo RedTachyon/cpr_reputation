@@ -287,7 +287,7 @@ class HarvestGame:
         self.reputation = {f"Agent{i}": 0 for i in range(self.num_agents)}
 
     def render(
-        self, fig: Optional[plt.Figure] = None, ax: Optional[plt.Axes] = None
+        self, fig = None, ax = None
     ) -> tuple:
         """Writes the image to a pyplot axes"""
         if ax is None and fig is None:
