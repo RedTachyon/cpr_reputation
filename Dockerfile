@@ -1,10 +1,7 @@
-FROM python:3.8.9-slim-buster
-
+FROM rayproject/ray-ml
+# Python 3.7
 RUN python -m pip install --upgrade pip
-RUN apt-get -y install make  # for ataripy
 
-WORKDIR home/
+RUN pip install numba
 
-COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
-
+WORKDIR home/code
