@@ -1,8 +1,7 @@
-FROM python:3.8.8-slim-buster
-
+FROM rayproject/ray-ml
+# Python 3.7
 RUN python -m pip install --upgrade pip
 
-WORKDIR home/
-COPY . .
+RUN pip install numba
 
-RUN pip install -r requirements.txt
+WORKDIR home/code

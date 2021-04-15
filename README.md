@@ -2,6 +2,8 @@
 
 `cpr_reputation/board.py` is a multi-agent game environment. 
 
+## [Weights and Biases](https://wandb.ai/quinn-dougherty/cpr_reputation_gridworld)
+
 ### Conda
 ```
 conda env create -f environment.yaml

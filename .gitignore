@@ -7,5 +7,11 @@ animation.mp4
 .pytest_cache/
 .hypothesis
 *.swp
-log/*
+log/
+.env
+WANDB_TOKEN
+wandb/
 .DS_Store
+ckpnts/*
+harvest-anim-1.mp4
+DOCKERRUN.sh

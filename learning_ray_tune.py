@@ -1,16 +1,19 @@
-#!/usr/bin/env python3
-
 import io
 from argparse import ArgumentParser
 
 import numpy as np
 import ray
+from ray import tune
 from ray.rllib.agents import ppo
 from ray.tune.registry import register_env
 from ray.tune.logger import UnifiedLogger
+from ray.tune.integration.wandb import WandbLoggerCallback
 from gym.spaces import Discrete, Box
 
+# import wandb
+
 from cpr_reputation.environments import HarvestEnv
+from cpr_reputation.utils import retrieve_checkpoint
 
 
 def make_arguments() -> ArgumentParser:
@@ -21,16 +24,11 @@ def make_arguments() -> ArgumentParser:
         help="select `hom` for homogenous training, select `het` for heterogenous training",
     )
     parser.add_argument(
-        "--checkpoint-no",
-        default=1,
-        type=int,
-        help="select an integer pointing to the checkpoint you want",
+        "--train-fn-name",
+        default=None,
+        help="name the training function. this is important for naming directories in ~/ray_results",
     )
     return parser
-
-
-def path_from_ini(x: dict) -> str:
-    return "".join(f"{key}={value}" for key, value in x.items())
 
 
 parser = make_arguments()
@@ -85,32 +83,40 @@ config = {
 with io.open("WANDB_TOKEN", "r") as file:
     WANDB_TOKEN = file.read()
 
-checkpoint_dir = (
-    f"ckpnts/checkpoint_{args.checkpoint_no}/checkpoint-{args.checkpoint_no}"
-)
 
-register_env("harvest", lambda config: HarvestEnv(config, **defaults_ini))
+def train_fn(dummy, cnfg=config):
 
-ray.init()
+    trainer = ppo.PPOTrainer(
+        env="harvest",
+        config=cnfg,
+        logger_creator=lambda cfg: UnifiedLogger(cfg, "log"),
+    )
 
-trainer = ppo.PPOTrainer(
-    env="harvest", logger_creator=lambda cfg: UnifiedLogger(cfg, "log"), config=config,
-)
+    results = trainer.train()
+    print(results)
+
+    return results
+
+
+if args.train_fn_name is not None:
+    train_fn.__name__ = args.train_fn_name
 
 if __name__ == "__main__":
+    register_env("harvest", lambda config: HarvestEnv(config, **defaults_ini))
 
-    try:
-        trainer.restore(checkpoint_dir)
-    except AssertionError:
-        print(f"NOT pulling checkpoint from {checkpoint_dir}")
-    else:
-        print(f"Pulling checkpoint from {checkpoint_dir}")
-    finally:
-        counter: int = 0
-        while True:
-            print(f"Training - {counter} times this run")
-            result_dict = trainer.train()
-            print(result_dict)
+    ray.init()
 
-            trainer.save("ckpnts")
-            counter += 1
+    while True:
+        tune.run(
+            train_fn,
+            config=dict(),
+            callbacks=[
+                WandbLoggerCallback(
+                    project="cpr_reputation_gridworld",
+                    api_key_file="WANDB_TOKEN",
+                    log_config=True,
+                )
+            ],
+            checkpoint_at_end=True,
+            restore=retrieve_checkpoint(prefix=train_fn.__name__),
+        )

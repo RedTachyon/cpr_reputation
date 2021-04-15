@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Tuple, List, Dict, Optional
+from typing import Tuple, List, Dict
 
 import numpy as np
 from numba import vectorize
@@ -170,14 +170,10 @@ def random_board(size: Tuple[int, int], prob: float = 0.1) -> Board:
     return (prob_map < prob).astype(np.int8)
 
 
-def random_crosses(size: Position,
-                   num_crosses: int = 10) -> Board:
+def random_crosses(size: Position, num_crosses: int = 10) -> Board:
     """Creates a board with random cross-shaped apple patterns"""
     all_positions = [(row, col) for col in range(size[1]) for row in range(size[0])]
-    random_idx = np.random.choice(
-                      range(len(all_positions)),
-                      num_crosses,
-                      replace=False)
+    random_idx = np.random.choice(range(len(all_positions)), num_crosses, replace=False)
     initial_apples = [all_positions[i] for i in random_idx]
     board = create_board(size, initial_apples)
     return board
@@ -220,7 +216,7 @@ def regenerate_apples(board: Board) -> Board:
     rand = np.random.rand(*neighbor_map.shape)
     regen_map = rand < prob_map
     # updated_board = np.clip(board + regen_map, 0, 1).astype(int)
-    updated_board = (board + regen_map > 0)
+    updated_board = board + regen_map > 0
 
     updated_board = updated_board * (1 - walls_board(board.shape))
     updated_board = updated_board.astype(int)
@@ -290,9 +286,9 @@ class HarvestGame:
 
         self.reputation = {f"Agent{i}": 0 for i in range(self.num_agents)}
 
-    def render(self, ax: Optional[plt.Axes] = None):
+    def render(self, fig=None, ax=None) -> tuple:
         """Writes the image to a pyplot axes"""
-        if ax is None:
+        if ax is None and fig is None:
             fig, ax = plt.subplots()
         board = self.board.copy()
         for name, agent in self.agents.items():
@@ -301,6 +297,7 @@ class HarvestGame:
         board[self.walls.astype(bool)] = 3
         ax.cla()
         ax.imshow(board, cmap=cmap)
+        return fig, ax
 
     def is_free(self, pos: Position) -> bool:  # TODO: Check if it's on a wall
         """Checks whether the position is within bounds, and unoccupied"""
