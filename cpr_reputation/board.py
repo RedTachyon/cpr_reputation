@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import namedtuple
 from dataclasses import dataclass
 from typing import Tuple, List, Dict
+import random
 
 import numpy as np
 from numba import vectorize
@@ -262,6 +263,9 @@ class HarvestGame:
         self.walls = walls_board(self.size)
         # self.walls = np.zeros(self.size)
 
+        self.time = None
+        self.original_board = None
+
         self.reset()
 
     def __repr__(self) -> str:
@@ -269,6 +273,7 @@ class HarvestGame:
 
     def reset(self):
         self.board = random_crosses(self.size, self.num_crosses)
+        self.original_board = np.copy(self.board)
         self.agents = {
             f"Agent{i}": Walker(
                 pos=agent_initial_position(i, self.num_agents),
@@ -283,6 +288,8 @@ class HarvestGame:
             self.board[agent.pos] = 0
 
         self.board[self.walls.astype(bool)] = 0
+
+        self.time = 0
 
         self.reputation = {f"Agent{i}": 0 for i in range(self.num_agents)}
 
@@ -386,6 +393,19 @@ class HarvestGame:
             return 1.0
         else:  # no apple in new cell
             return 0.0
+
+    def step(self, actions: Dict[str, int]) -> Dict[str, float]:
+        """Process actions and return rewards."""
+        rewards = {agent_id: 0.0 for agent_id in self.agents}
+        action_pairs = list(actions.items())
+        random.shuffle(action_pairs)
+        for agent_id, action in action_pairs:
+            reward = self.process_action(agent_id, action)
+            rewards[agent_id] += reward
+        self.board = regenerate_apples(self.board)
+        self.board = self.board * self.original_board
+        self.time += 1
+        return rewards
 
     def get_beam_bounds(self, agent_id: str) -> Tuple[Position, Position]:
         """Returns indices of the (top left, bottom right) (inclusive) boundaries
