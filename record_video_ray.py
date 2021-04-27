@@ -15,8 +15,8 @@ class HarvestRecorder(HarvestEnv):
         self,
         config: dict,
         trainer,
-        checkpoints_superdir: str = "ckpnts",
         checkpoint_no: int = 1,
+        checkpoints_superdir: str = "ckpnts",
         **kwargs,
     ):
         super().__init__(config, **kwargs)
@@ -33,7 +33,7 @@ class HarvestRecorder(HarvestEnv):
             )
         self.checkpoint_no = checkpoint_no
 
-    def record(self, filename: str = None):
+    def record(self, filename: str = None, geneity: str = "hom"):
         """Records a video of the loaded checkpoint.
 
         WARNING: is only really compatible with homogeneous training."""
@@ -44,10 +44,21 @@ class HarvestRecorder(HarvestEnv):
         obs = self.reset()
         images = list()
         while True:
-            actions = self.trainer.compute_actions(
-                obs,
-                policy_id="walker",  # This is the part that's only really compatible with homogeneity.
-            )
+            if geneity == "hom":
+                actions = self.trainer.compute_action(
+                    observation=obs,
+                    policy_id="walker",
+                )
+            elif geneity == "het":
+                actions = {}
+                for agent_id, _ in self.game.agents.items():
+                    actions[agent_id] = self.trainer.compute_action(
+                        observation=self.game.get_agent_obs(agent_id),
+                        policy_id="walker"
+                    )
+            else:
+                raise ValueError(f"bad geneity: {geneity}")
+
             obs, rewards, done, info = self.step(actions)
 
             board = self.game.board.copy()
@@ -66,6 +77,18 @@ class HarvestRecorder(HarvestEnv):
 
 
 if __name__ == "__main__":
-    recorder = HarvestRecorder(config, trainer, **defaults_ini)
+    checkpoint_no = 170
+    recorder = HarvestRecorder(config, trainer, checkpoint_no, **defaults_ini)
 
-    recorder.record()
+    recorder.record(geneity="hom")
+
+
+"""
+TODO
+
+- try `%run record_video_ray.py` with geneity="hom"
+    + debug `trainer.compute_action`
+- try training again with DQN
+- parse args for geneity, checkpoint_no
+- msg AK/QD
+"""

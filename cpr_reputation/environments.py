@@ -3,7 +3,7 @@ from typing import Dict
 
 from ray.rllib.env import MultiAgentEnv as RayMultiAgentEnv
 
-from cpr_reputation.board import HarvestGame
+from cpr_reputation.board import HarvestGame, SHOOT, NOOP
 
 
 class HarvestEnv(RayMultiAgentEnv):
@@ -24,6 +24,10 @@ class HarvestEnv(RayMultiAgentEnv):
 
     def step(self, actions: Dict[str, int]):
         # process actions and rewards
+        actions = {
+            agent_id: NOOP for (agent_id, action) in actions.items()
+            if action == SHOOT
+        }
 
         rewards = self.game.step(actions)
 

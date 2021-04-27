@@ -2,6 +2,7 @@
 
 import io
 from argparse import ArgumentParser
+from copy import deepcopy
 
 import numpy as np
 import ray
@@ -33,8 +34,9 @@ def path_from_ini(x: dict) -> str:
     return "".join(f"{key}={value}" for key, value in x.items())
 
 
-parser = make_arguments()
-args = parser.parse_args()
+
+# with io.open("WANDB_TOKEN", "r") as file:
+#     WANDB_TOKEN = file.read()
 
 defaults_ini = {
     "num_agents": 4,
@@ -49,12 +51,17 @@ walker1 = (
     Box(
         0.0,
         1.0,
-        (defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1, 3),
+        (
+            defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1, 3),
         np.float32,
     ),  # obs
     Discrete(8),  # action
     dict(),
 )
+
+# build agent policies
+parser = make_arguments()
+args = parser.parse_args()
 
 if args.geneity == "hom":
     multiagent: dict = {
@@ -62,7 +69,8 @@ if args.geneity == "hom":
         "policy_mapping_fn": lambda agent_id: "walker",
     }
 elif args.geneity == "het":
-    walkers = {f"Agent{k}": walker1 for k in range(defaults_ini["num_agents"])}
+    walkers = {f"Agent{k}": deepcopy(walker1) for k in
+               range(defaults_ini["num_agents"])}
     multiagent: dict = {
         "policies": walkers,
         "policy_mapping_fn": lambda agent_id: agent_id,
@@ -77,40 +85,38 @@ config = {
         "dim": 3,
         "conv_filters": [
             [16, [4, 4], 1],
-            [32, [defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1], 1],
+            [32, [defaults_ini["sight_dist"],
+                  2 * defaults_ini["sight_width"] + 1], 1],
         ],
     },
 }
-
-with io.open("WANDB_TOKEN", "r") as file:
-    WANDB_TOKEN = file.read()
 
 checkpoint_dir = (
     f"ckpnts/checkpoint_{args.checkpoint_no}/checkpoint-{args.checkpoint_no}"
 )
 
-register_env("harvest", lambda config: HarvestEnv(config, **defaults_ini))
-
 ray.init()
 
+register_env("harvest", lambda config: HarvestEnv(config, **defaults_ini))
+
 trainer = ppo.PPOTrainer(
-    env="harvest", logger_creator=lambda cfg: UnifiedLogger(cfg, "log"), config=config,
+    env="harvest", logger_creator=lambda cfg: UnifiedLogger(cfg, "log"),
+    config=config,
 )
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     try:
         trainer.restore(checkpoint_dir)
-    except AssertionError:
+    except FileNotFoundError:
         print(f"NOT pulling checkpoint from {checkpoint_dir}")
     else:
         print(f"Pulling checkpoint from {checkpoint_dir}")
     finally:
-        counter: int = 0
-        while True:
-            print(f"Training - {counter} times this run")
+        print(f"geneity: `{args.geneity}`")
+        for iteration in range(400):
             result_dict = trainer.train()
-            print(result_dict)
 
-            trainer.save("ckpnts")
-            counter += 1
+            print(iteration, result_dict)
+            if iteration % 10 == 9:
+                trainer.save("ckpnts")
