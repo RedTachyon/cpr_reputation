@@ -66,6 +66,7 @@ class HarvestRecorder(HarvestEnv):
 
 
 if __name__ == "__main__":
-    recorder = HarvestRecorder(config, trainer, **defaults_ini)
+    checkpoint_no = 35  # TODO set
+    recorder = HarvestRecorder(config, trainer, checkpoint_no=checkpoint_no, **defaults_ini)
 
     recorder.record()
