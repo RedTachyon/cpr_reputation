@@ -82,8 +82,8 @@ config = {
     },
 }
 
-with io.open("WANDB_TOKEN", "r") as file:
-    WANDB_TOKEN = file.read()
+# with io.open("WANDB_TOKEN", "r") as file:
+#     WANDB_TOKEN = file.read()
 
 checkpoint_dir = (
     f"ckpnts/checkpoint_{args.checkpoint_no}/checkpoint-{args.checkpoint_no}"
