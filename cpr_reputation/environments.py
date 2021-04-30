@@ -25,8 +25,7 @@ class HarvestEnv(RayMultiAgentEnv):
     def step(self, actions: Dict[str, int]):
         # process actions and rewards
         actions = {
-            agent_id: NOOP for (agent_id, action) in actions.items()
-            if action == SHOOT
+            agent_id: NOOP if action == SHOOT else action for (agent_id, action) in actions.items()
         }
 
         rewards = self.game.step(actions)

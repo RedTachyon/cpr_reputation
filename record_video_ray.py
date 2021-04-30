@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from argparse import ArgumentParser
 
 from learning_ray import trainer, config, defaults_ini
 from cpr_reputation.environments import HarvestEnv
@@ -9,6 +10,24 @@ from matplotlib import animation
 
 cmap = mpl.colors.ListedColormap(["brown", "green", "blue", "grey"])
 
+
+def make_arguments() -> ArgumentParser:
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--geneity",
+        default="hom",
+        help="select `hom` for homogenous training, select `het` for heterogenous training",
+    )
+    parser.add_argument(
+        "--checkpoint-no",
+        default=1,
+        type=int,
+        help="select an integer pointing to the checkpoint you want",
+    )
+    return parser
+
+parser = make_arguments()
+args = parser.parse_args()
 
 class HarvestRecorder(HarvestEnv):
     def __init__(
@@ -77,10 +96,10 @@ class HarvestRecorder(HarvestEnv):
 
 
 if __name__ == "__main__":
-    checkpoint_no = 170
+    checkpoint_no = args.checkpoint_no
     recorder = HarvestRecorder(config, trainer, checkpoint_no, **defaults_ini)
 
-    recorder.record(geneity="hom")
+    recorder.record(geneity=args.geneity)
 
 
 """

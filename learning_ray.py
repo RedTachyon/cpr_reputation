@@ -89,6 +89,9 @@ config = {
                   2 * defaults_ini["sight_width"] + 1], 1],
         ],
     },
+    "train_batch_size": 4000,
+    "sgd_minibatch_size": 128,
+    "num_sgd_iter": 3,
 }
 
 checkpoint_dir = (
