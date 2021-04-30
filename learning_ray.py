@@ -34,7 +34,6 @@ def path_from_ini(x: dict) -> str:
     return "".join(f"{key}={value}" for key, value in x.items())
 
 
-
 # with io.open("WANDB_TOKEN", "r") as file:
 #     WANDB_TOKEN = file.read()
 
@@ -51,8 +50,7 @@ walker1 = (
     Box(
         0.0,
         1.0,
-        (
-            defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1, 3),
+        (defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1, 3),
         np.float32,
     ),  # obs
     Discrete(8),  # action
@@ -69,8 +67,9 @@ if args.geneity == "hom":
         "policy_mapping_fn": lambda agent_id: "walker",
     }
 elif args.geneity == "het":
-    walkers = {f"Agent{k}": deepcopy(walker1) for k in
-               range(defaults_ini["num_agents"])}
+    walkers = {
+        f"Agent{k}": deepcopy(walker1) for k in range(defaults_ini["num_agents"])
+    }
     multiagent: dict = {
         "policies": walkers,
         "policy_mapping_fn": lambda agent_id: agent_id,
@@ -85,18 +84,17 @@ config = {
         "dim": 3,
         "conv_filters": [
             [16, [4, 4], 1],
-            [32, [defaults_ini["sight_dist"],
-                  2 * defaults_ini["sight_width"] + 1], 1],
+            [32, [defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1], 1],
         ],
     },
     "train_batch_size": 4000,
-    "sgd_minibatch_size": 128,
+    "sgd_minibatch_size": 1000,
     "num_sgd_iter": 3,
 }
 
 
-# with io.open("WANDB_TOKEN", "r") as file:
-#     WANDB_TOKEN = file.read()
+with io.open("WANDB_TOKEN", "r") as file:
+    WANDB_TOKEN = file.read()
 
 checkpoint_dir = (
     f"ckpnts/checkpoint_{args.checkpoint_no}/checkpoint-{args.checkpoint_no}"
@@ -107,8 +105,7 @@ ray.init()
 register_env("harvest", lambda config: HarvestEnv(config, **defaults_ini))
 
 trainer = ppo.PPOTrainer(
-    env="harvest", logger_creator=lambda cfg: UnifiedLogger(cfg, "log"),
-    config=config,
+    env="harvest", logger_creator=lambda cfg: UnifiedLogger(cfg, "log"), config=config,
 )
 
 

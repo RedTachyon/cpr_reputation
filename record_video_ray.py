@@ -26,8 +26,10 @@ def make_arguments() -> ArgumentParser:
     )
     return parser
 
+
 parser = make_arguments()
 args = parser.parse_args()
+
 
 class HarvestRecorder(HarvestEnv):
     def __init__(
@@ -65,15 +67,14 @@ class HarvestRecorder(HarvestEnv):
         while True:
             if geneity == "hom":
                 actions = self.trainer.compute_action(
-                    observation=obs,
-                    policy_id="walker",
+                    observation=obs, policy_id="walker",
                 )
             elif geneity == "het":
                 actions = {}
                 for agent_id, _ in self.game.agents.items():
                     actions[agent_id] = self.trainer.compute_action(
                         observation=self.game.get_agent_obs(agent_id),
-                        policy_id="walker"
+                        policy_id="walker",
                     )
             else:
                 raise ValueError(f"bad geneity: {geneity}")

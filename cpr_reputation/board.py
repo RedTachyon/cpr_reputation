@@ -193,7 +193,7 @@ def agent_initial_position(i: int, total: int) -> Position:
     # (rows, cols) = np.where(idx_map == i)
     # row, col = rows[0], cols[0]
     # return Position(row, col) + (1, 1)
-    return Position(3*i, 3*i) + (1, 1)
+    return Position(3 * i, 3 * i) + (1, 1)
 
 
 @vectorize
