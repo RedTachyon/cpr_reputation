@@ -188,12 +188,12 @@ def agent_initial_position(i: int, total: int) -> Position:
     For example, with 10 agents, they will be in a 4x4 square, with 6 spots unfilled.
     With 16 agents, they're in a full 4x4 square.
     """
-    # layout_base = int(np.ceil(np.sqrt(total)))
-    # idx_map = np.arange(layout_base ** 2).reshape(layout_base, layout_base)
-    # (rows, cols) = np.where(idx_map == i)
-    # row, col = rows[0], cols[0]
-    # return Position(row, col) + (1, 1)
-    return Position(3 * i, 3 * i) + (1, 1)
+    layout_base = int(np.ceil(np.sqrt(total)))
+    idx_map = np.arange(layout_base ** 2).reshape(layout_base, layout_base)
+    (rows, cols) = np.where(idx_map == i)
+    row, col = rows[0], cols[0]
+    return Position(row, col) + (1, 1)
+    # return Position(3 * i, 3 * i) + (1, 1)
 
 
 @vectorize

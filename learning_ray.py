@@ -118,9 +118,9 @@ if __name__ == "__main__":
         print(f"Pulling checkpoint from {checkpoint_dir}")
     finally:
         print(f"geneity: `{args.geneity}`")
-        for iteration in range(400):
+        for iteration in range(args.checkpoint_no, 400):
             result_dict = trainer.train()
 
             print(iteration, result_dict)
-            if iteration % 10 == 9:
+            if iteration % 5 == 4:
                 trainer.save("ckpnts")

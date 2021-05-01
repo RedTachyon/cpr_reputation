@@ -64,7 +64,8 @@ class HarvestRecorder(HarvestEnv):
 
         obs = self.reset()
         images = list()
-        while True:
+        done = {"__all__": False}
+        while not done["__all__"]:
             if geneity == "hom":
                 actions = self.trainer.compute_action(
                     observation=obs, policy_id="walker",
@@ -74,7 +75,7 @@ class HarvestRecorder(HarvestEnv):
                 for agent_id, _ in self.game.agents.items():
                     actions[agent_id] = self.trainer.compute_action(
                         observation=self.game.get_agent_obs(agent_id),
-                        policy_id="walker",
+                        policy_id=agent_id,
                     )
             else:
                 raise ValueError(f"bad geneity: {geneity}")
@@ -88,8 +89,6 @@ class HarvestRecorder(HarvestEnv):
             im = ax.imshow(board, cmap=cmap)
             images.append([im])
 
-            if done["__all__"]:
-                break
         ani = animation.ArtistAnimation(
             fig, images, interval=50, blit=True, repeat_delay=10000
         )
