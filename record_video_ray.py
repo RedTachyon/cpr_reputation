@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from argparse import ArgumentParser
 
 from learning_ray import trainer, config, defaults_ini
 from cpr_reputation.environments import HarvestEnv
@@ -10,13 +11,33 @@ from matplotlib import animation
 cmap = mpl.colors.ListedColormap(["brown", "green", "blue", "grey"])
 
 
+def make_arguments() -> ArgumentParser:
+    parser = ArgumentParser()
+    parser.add_argument(
+        "--geneity",
+        default="hom",
+        help="select `hom` for homogenous training, select `het` for heterogenous training",
+    )
+    parser.add_argument(
+        "--checkpoint-no",
+        default=1,
+        type=int,
+        help="select an integer pointing to the checkpoint you want",
+    )
+    return parser
+
+
+parser = make_arguments()
+args = parser.parse_args()
+
+
 class HarvestRecorder(HarvestEnv):
     def __init__(
         self,
         config: dict,
         trainer,
-        checkpoints_superdir: str = "ckpnts",
         checkpoint_no: int = 1,
+        checkpoints_superdir: str = "ckpnts",
         **kwargs,
     ):
         super().__init__(config, **kwargs)
@@ -33,7 +54,7 @@ class HarvestRecorder(HarvestEnv):
             )
         self.checkpoint_no = checkpoint_no
 
-    def record(self, filename: str = None):
+    def record(self, filename: str = None, geneity: str = "hom"):
         """Records a video of the loaded checkpoint.
 
         WARNING: is only really compatible with homogeneous training."""
@@ -43,11 +64,22 @@ class HarvestRecorder(HarvestEnv):
 
         obs = self.reset()
         images = list()
-        while True:
-            actions = self.trainer.compute_actions(
-                obs,
-                policy_id="walker",  # This is the part that's only really compatible with homogeneity.
-            )
+        done = {"__all__": False}
+        while not done["__all__"]:
+            if geneity == "hom":
+                actions = self.trainer.compute_action(
+                    observation=obs, policy_id="walker",
+                )
+            elif geneity == "het":
+                actions = {}
+                for agent_id, _ in self.game.agents.items():
+                    actions[agent_id] = self.trainer.compute_action(
+                        observation=self.game.get_agent_obs(agent_id),
+                        policy_id=agent_id,
+                    )
+            else:
+                raise ValueError(f"bad geneity: {geneity}")
+
             obs, rewards, done, info = self.step(actions)
 
             board = self.game.board.copy()
@@ -57,8 +89,6 @@ class HarvestRecorder(HarvestEnv):
             im = ax.imshow(board, cmap=cmap)
             images.append([im])
 
-            if done["__all__"]:
-                break
         ani = animation.ArtistAnimation(
             fig, images, interval=50, blit=True, repeat_delay=10000
         )
@@ -66,7 +96,18 @@ class HarvestRecorder(HarvestEnv):
 
 
 if __name__ == "__main__":
-    checkpoint_no = 35  # TODO set
-    recorder = HarvestRecorder(config, trainer, checkpoint_no=checkpoint_no, **defaults_ini)
+    checkpoint_no = args.checkpoint_no
+    recorder = HarvestRecorder(config, trainer, checkpoint_no, **defaults_ini)
 
-    recorder.record()
+    recorder.record(geneity=args.geneity)
+
+
+"""
+TODO
+
+- try `%run record_video_ray.py` with geneity="hom"
+    + debug `trainer.compute_action`
+- try training again with DQN
+- parse args for geneity, checkpoint_no
+- msg AK/QD
+"""

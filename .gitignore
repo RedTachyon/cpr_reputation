@@ -13,5 +13,5 @@ WANDB_TOKEN
 wandb/
 .DS_Store
 ckpnts/*
-harvest-anim-1.mp4
+harvest-anim-*.mp4
 DOCKERRUN.sh
