@@ -3,6 +3,7 @@
 from copy import deepcopy
 import numpy as np
 from cpr_reputation.board import (
+    apple_values,
     HarvestGame,
     create_board,
     fast_rot90,
@@ -306,6 +307,7 @@ def test_agent_initial_position():
 
 
 def test_apples_do_not_disappear_on_step():
+    np.random.seed(1)  # this test is sensitive to randomness
     env = HarvestEnv(config={}, num_agents=1, size=(20, 20))
     env.reset()
     board = deepcopy(env.game.board)
@@ -340,3 +342,10 @@ def test_regenerate_apples_with_step():
         env.step({agent_id: NOOP for agent_id in env.game.agents.keys()})
     board_end = deepcopy(env.game.board)
     assert board_end.sum() > board_middle.sum()
+
+
+def test_apple_values():
+    np.random.seed(0)
+    env1 = HarvestGame(num_agents=2, size=Position(10, 10))
+    assert apple_values(env1.board, Position(7, 3), factor=1) == 8.0
+    assert apple_values(env1.board, Position(1, 0), factor=1) == 11.0

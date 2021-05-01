@@ -11,7 +11,9 @@ from hypothesis.strategies import integers
     sight_width=integers(min_value=2, max_value=50),
     sight_dist=integers(min_value=3, max_value=100),
 )
-def test_get_agent_obs_board_shape(num_agents, size_i, size_j, sight_width, sight_dist):
+def test_get_agent_obs_board_shape(
+    num_agents: int, size_i: int, size_j: int, sight_width: int, sight_dist: int
+):
     env1 = HarvestGame(
         num_agents=num_agents,
         size=Position(size_i, size_j),
