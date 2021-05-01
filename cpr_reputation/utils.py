@@ -5,6 +5,7 @@ import numpy as np
 
 RAY_RESULTS = "//home/quinn/ray_results"
 
+
 def sigmoid(x: float) -> float:
     return 1 / (1 + np.exp(-x))
 
