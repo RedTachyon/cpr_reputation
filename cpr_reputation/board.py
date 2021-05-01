@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from cpr_reputation.utils import sigmoid
+
 from collections import namedtuple
 from dataclasses import dataclass
 from typing import Tuple, List, Dict
@@ -95,12 +97,12 @@ class Position(namedtuple("Position", ["i", "j"])):
     # def __iter__(self) -> Tuple[int, int]:
     #     return (self.i, self.j)
 
-    def __getitem__(self, key: int) -> int:
-        if key == 0:
-            return self.i
-        if key == 1:
-            return self.j
-        raise ValueError("Position only has two coordinates!")
+#   def __getitem__(self, key: int) -> int:
+#       if key == 0:
+#           return self.i
+#       if key == 1:
+#           return self.j
+#       raise ValueError("Position only has two coordinates!")
 
     def __hash__(self) -> int:
         return hash((self.i, self.j))
@@ -461,7 +463,7 @@ class HarvestGame:
         current_pos = self.agents[agent_id].pos
         if self.board[current_pos]:  # apple in new cell
             self.board[current_pos] = 0
-            self.reputation[agent_id] += apple_values(self.board, current_pos, factor=1)
+            self.reputation[agent_id] += apple_values(self.board, current_pos, factor=NEIGHBOR_KERNEL.sum())
             return 1.0
         else:  # no apple in new cell
             return 0.0
@@ -516,7 +518,7 @@ class HarvestGame:
         reputation_board = np.zeros_like(self.board)
         for other_agent_id, other_agent in self.agents.items():
             agent_board[other_agent.pos] = 1
-            reputation_board[other_agent.pos] = self.reputation[agent_id]
+            reputation_board[other_agent.pos] = sigmoid(self.reputation[agent_id])
         wall_board = self.walls
 
         # Add any extra layers before this line
