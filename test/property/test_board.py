@@ -21,7 +21,7 @@ def test_get_agent_obs_board_shape(
         sight_dist=sight_dist,
     )
     ag0 = "Agent0"
-    constant_obs_shape = (sight_dist, 2 * sight_width + 1, 3)
+    constant_obs_shape = (sight_dist, 2 * sight_width + 1, 4)
     env1.agents[ag0].rot = 0  # facing north
     assert (
         env1.get_agent_obs(ag0).shape == constant_obs_shape

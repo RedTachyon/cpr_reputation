@@ -513,16 +513,17 @@ class HarvestGame:
 
         apple_board = self.board
         agent_board = np.zeros_like(self.board)
+        reputation_board = np.zeros_like(self.board)
         for other_agent_id, other_agent in self.agents.items():
-            agent_board[other_agent.pos] = self.reputation[agent_id]  # 1
-
+            agent_board[other_agent.pos] = 1
+            reputation_board[other_agent.pos] = self.reputation[agent_id]
         wall_board = self.walls
 
         # Add any extra layers before this line
 
         full_board = np.stack(
-            [apple_board, agent_board, wall_board], axis=-1
-        )  # H x W x 3
+            [apple_board, agent_board, wall_board, reputation_board], axis=-1
+        )  # H x W x 4
         rot = agent.rot
 
         # Rotate the board so that the agent is always pointing up.
@@ -551,7 +552,7 @@ class HarvestGame:
 
         base_slice = board[
             slice(*bounds_i_clipped), slice(*bounds_j_clipped)
-        ]  # <= (20, 21)
+        ]  # <= (H, W)
 
         if bound_up < 0:
             padding = np.zeros((-bound_up, base_slice.shape[1], base_slice.shape[2]))
@@ -567,4 +568,4 @@ class HarvestGame:
         if bound_down > board.shape[0]:
             raise ValueError("WTF")
 
-        return base_slice  # 20 x 21 x 3
+        return base_slice  # H x W x 4
