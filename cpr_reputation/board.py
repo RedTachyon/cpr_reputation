@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from cpr_reputation.utils import sigmoid
+
 from collections import namedtuple
 from dataclasses import dataclass
 from typing import Tuple, List, Dict
@@ -92,6 +94,27 @@ class Position(namedtuple("Position", ["i", "j"])):
             return self.i == other[0] and self.j == other[1]
         raise ValueError("A Position can only be compared with a Position-like item.")
 
+    # def __iter__(self) -> Tuple[int, int]:
+    #     return (self.i, self.j)
+
+    #   def __getitem__(self, key: int) -> int:
+    #       if key == 0:
+    #           return self.i
+    #       if key == 1:
+    #           return self.j
+    #       raise ValueError("Position only has two coordinates!")
+
+    def __hash__(self) -> int:
+        return hash((self.i, self.j))
+
+    #   def __setitem__(self, key: int, value: int):
+    #       if key == 0:
+    #           self.i = value
+    #       elif key == 1:
+    #           self.j == value
+    #       else:
+    #           raise ValueError("Position only has two coordinates!")
+
     def is_between(self, pos1: Position, pos2: Position):
         """Checks whether a position is between two antipodal bounding box coordinates.
 
@@ -151,6 +174,7 @@ def get_neighbors(pos: Position, size: Position, radius: int = 1) -> List[Positi
             for col1 in range(size[1])
             for row1 in range(size[0])
             if abs(row1 - row0) + abs(col1 - col0) <= radius
+            and in_bounds(Position(row1, col1), size)
         ]
 
 
@@ -223,6 +247,53 @@ def regenerate_apples(board: Board) -> Board:
     updated_board = updated_board * (1 - walls_board(board.shape))
     updated_board = updated_board.astype(int)
     return updated_board
+
+
+def apple_values_ternary(board: Board) -> Dict[Position, int]:
+    """
+    Type 0: there is an(other) apple in range (it can immediately regrow)
+    Type 1: there isn't another apple in range, but another position in range is type 0
+        (it can eventually regrow)
+    Type 2: there are no apples in range
+    """
+
+    kernel = NEIGHBOR_KERNEL
+    radius = kernel.shape[0] // 2 + 1
+    neighb_conv = convolve(board, kernel, mode="constant")
+
+    cache = dict()
+
+    def recur(position: Position) -> int:
+        if position in cache.keys():
+            return cache[position]
+        if neighb_conv[tuple(position)] != 0:
+            cache[position] = 0
+            return 0
+        neighbors = get_neighbors(position, Position(*board.shape), radius=radius)
+
+        is_dead = True
+        for neighbor in neighbors:
+            if neighb_conv[tuple(neighbor)] != 0:
+                is_dead = False
+        if is_dead:
+            cache[position] = 2
+            return 2
+
+        for neighbor in neighbors:
+            if recur(neighbor) in (0, 1):
+                cache[position] = 1
+                return 1
+        return 2
+
+    recur(Position(0, 0))
+    return cache
+
+
+def apple_values(board: Board, position: Position, factor: float = 1.0) -> float:
+    """reputational magnitude of taking an apple is inversely proportional to the number of apples around it"""
+    kernel = NEIGHBOR_KERNEL
+    neighbor_apple_sums = convolve(board, kernel, mode="constant")
+    return (kernel.sum() - neighbor_apple_sums[tuple(position)]) / factor
 
 
 def walls_board(size: Tuple[int, int]) -> Board:
@@ -379,7 +450,7 @@ class HarvestGame:
             for _agent in affected_agents:
                 _agent.frozen = 25
 
-            self.reputation[agent_id] += 1
+            # self.reputation[agent_id] += 1
             # does reputation increase after shooting?
             # see notebook for weird results
         elif action == NOOP:
@@ -392,6 +463,9 @@ class HarvestGame:
         current_pos = self.agents[agent_id].pos
         if self.board[current_pos]:  # apple in new cell
             self.board[current_pos] = 0
+            self.reputation[agent_id] += apple_values(
+                self.board, current_pos, factor=NEIGHBOR_KERNEL.sum()
+            )
             return 1.0
         else:  # no apple in new cell
             return 0.0
@@ -438,21 +512,22 @@ class HarvestGame:
             if other_name != agent_id and other_agent.pos.is_between(bound1, bound2)
         ]
 
-    def get_agent_obs(self, agent_id: str):
+    def get_agent_obs(self, agent_id: str) -> Board:
         agent = self.agents[agent_id]
 
         apple_board = self.board
         agent_board = np.zeros_like(self.board)
+        reputation_board = np.zeros_like(self.board)
         for other_agent_id, other_agent in self.agents.items():
             agent_board[other_agent.pos] = 1
-
+            reputation_board[other_agent.pos] = sigmoid(self.reputation[agent_id])
         wall_board = self.walls
 
         # Add any extra layers before this line
 
         full_board = np.stack(
-            [apple_board, agent_board, wall_board], axis=-1
-        )  # H x W x 3
+            [apple_board, agent_board, wall_board, reputation_board], axis=-1
+        )  # H x W x 4
         rot = agent.rot
 
         # Rotate the board so that the agent is always pointing up.
@@ -481,8 +556,8 @@ class HarvestGame:
 
         base_slice = board[
             slice(*bounds_i_clipped), slice(*bounds_j_clipped)
-        ]  # <= (20, 21)
-        # breakpoint()
+        ]  # <= (H, W)
+
         if bound_up < 0:
             padding = np.zeros((-bound_up, base_slice.shape[1], base_slice.shape[2]))
             base_slice = np.concatenate([padding, base_slice], axis=0)
@@ -497,4 +572,4 @@ class HarvestGame:
         if bound_down > board.shape[0]:
             raise ValueError("WTF")
 
-        return base_slice  # 20 x 21
+        return base_slice  # H x W x 4

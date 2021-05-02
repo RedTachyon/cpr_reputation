@@ -48,9 +48,9 @@ defaults_ini = {
 walker1 = (
     None,
     Box(
-        0.0,
+        -1.0,
         1.0,
-        (defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1, 3),
+        (defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1, 4),
         np.float32,
     ),  # obs
     Discrete(8),  # action
@@ -122,5 +122,5 @@ if __name__ == "__main__":
             result_dict = trainer.train()
 
             print(iteration, result_dict)
-            if iteration % 5 == 4:
+            if iteration % 10 == 9:
                 trainer.save("ckpnts")
