@@ -3,7 +3,7 @@ from typing import Dict
 
 from ray.rllib.env import MultiAgentEnv as RayMultiAgentEnv
 
-from cpr_reputation.board import HarvestGame, SHOOT, NOOP
+from cpr_reputation.board import HarvestGame
 
 
 class HarvestEnv(RayMultiAgentEnv):

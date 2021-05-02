@@ -463,7 +463,6 @@ class HarvestGame:
             print("invalid")
             raise ValueError(f"Invalid action {action}")
 
-
         current_pos = self.agents[agent_id].pos
         if self.board[current_pos]:  # apple in new cell
             self.board[current_pos] = 0
