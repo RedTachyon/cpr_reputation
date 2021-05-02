@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 
-import io
-from argparse import ArgumentParser
 from copy import deepcopy
 from typing import Optional
 
 import numpy as np
 import ray
-from ray.rllib.agents import ppo
-from ray.tune.registry import register_env
-from ray.tune.logger import UnifiedLogger
 from gym.spaces import Discrete, Box
-
+from ray.rllib.agents import ppo
+from ray.tune.logger import UnifiedLogger
+from ray.tune.registry import register_env
 from typarse import BaseParser
 
 from cpr_reputation.environments import HarvestEnv
