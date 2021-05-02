@@ -290,7 +290,7 @@ def test_zap_before_50(example_env2):
     # assert env.reputation["Agent0"] == 1
     for i in range(1, 10):
         # assert env.reputation[f"Agent{i}"] == 0
-        assert env.agents[f"Agent{i}"].frozen > 0
+        assert env.agents[f"Agent{i}"].frozen == 0
 
 
 def test_zap_after_50(example_env2):
