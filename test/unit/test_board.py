@@ -284,8 +284,18 @@ def test_go_forwardbackward_inverses(example_env2):
     assert old_pos == env.agents[ag9].pos
 
 
-def test_zap(example_env2):
+def test_zap_before_50(example_env2):
     env = example_env2
+    env.process_action("Agent0", SHOOT)
+    # assert env.reputation["Agent0"] == 1
+    for i in range(1, 10):
+        # assert env.reputation[f"Agent{i}"] == 0
+        assert env.agents[f"Agent{i}"].frozen == 0
+
+
+def test_zap_after_50(example_env2):
+    env = example_env2
+    env.time = 100
     env.process_action("Agent0", SHOOT)
     # assert env.reputation["Agent0"] == 1
     for i in range(1, 10):

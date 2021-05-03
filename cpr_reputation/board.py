@@ -378,7 +378,7 @@ class HarvestGame:
         ax.imshow(board, cmap=cmap)
         return fig, ax
 
-    def is_free(self, pos: Position) -> bool:  # TODO: Check if it's on a wall
+    def is_free(self, pos: Position) -> bool:
         """Checks whether the position is within bounds, and unoccupied"""
         if not in_bounds(pos, self.size):
             return False
@@ -446,6 +446,9 @@ class HarvestGame:
             self._rotate_agent(agent_id, 1)
         elif action == SHOOT:
             # Shoot a beam
+            if self.time < 50:
+                return 0.0
+
             affected_agents = self.get_affected_agents(agent_id)
             for _agent in affected_agents:
                 _agent.frozen = 25
