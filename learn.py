@@ -6,9 +6,10 @@ from typing import Optional
 import numpy as np
 import ray
 from gym.spaces import Discrete, Box
-from ray.rllib.agents import ppo
+from ray.rllib.agents import ppo, Trainer
 from ray.tune.logger import UnifiedLogger
 from ray.tune.registry import register_env
+from torch.utils.tensorboard import SummaryWriter
 from typarse import BaseParser
 
 from cpr_reputation.environments import HarvestEnv
@@ -17,17 +18,20 @@ from cpr_reputation.environments import HarvestEnv
 class Parser(BaseParser):
     heterogeneous: bool = False
     checkpoint: Optional[int]
+    iterations: int = 5
     # wandb_token: Optional[str]  # TODO: add this somehow at some point?
 
     _abbrev = {
         "heterogeneous": "het",
         "checkpoint": "c",
+        "iterations": "i",
         # "wandb_token": "w",
     }
 
     _help = {
         "heterogeneous": "Flag whether the agents should be heterogeneous (as opposed to default homogeneous)",
         "checkpoint": "From which checkpoint the training should be possibly resumed",
+        "iterations": "Number of training iterations",
         # "wandb_token": "Path to the wandb token for wandb integration"
     }
 
@@ -39,6 +43,23 @@ env_config = {  # TODO: put configs into a yaml?
     "sight_dist": 10,
     "num_crosses": 4,
 }
+
+tb_writer = SummaryWriter()
+
+
+def train(trainer: Trainer, iteration: int, verbose: bool = True):
+    results = trainer.train()
+
+    if iteration % 10 == 0:
+        trainer.save("ckpnts")
+
+    if verbose:
+        print(iteration, results)
+
+    tb_writer.add_scalars("Mean Rewards per Agent", results["policy_reward_mean"], iteration)
+    # tb_writer.add_scalar("Mean Total Rewards", results["episode_reward_mean"], iteration)
+
+    return results
 
 
 if __name__ == "__main__":
@@ -74,7 +95,7 @@ if __name__ == "__main__":
             "policy_mapping_fn": lambda agent_id: "walker",
         }
 
-    config = {
+    ray_config = {
         "multiagent": multiagent,
         "framework": "torch",
         "model": {
@@ -94,7 +115,7 @@ if __name__ == "__main__":
     trainer = ppo.PPOTrainer(
         env="CPRHarvestEnv-v0",
         logger_creator=lambda cfg: UnifiedLogger(cfg, "log"),
-        config=config,
+        config=ray_config,
     )
 
     if args.checkpoint is not None:
@@ -107,9 +128,8 @@ if __name__ == "__main__":
         checkpoint = 1
 
     print(("Heterogeneous" if args.heterogeneous else "Homogeneous") + " training")
-    for iteration in range(checkpoint, 400):
-        result_dict = trainer.train()
-
-        print(iteration, result_dict)
-        if iteration % 10 == 0:
-            trainer.save("ckpnts")
+    for iteration in range(checkpoint, args.iterations):
+        try:
+            train(trainer, iteration)
+        except KeyboardInterrupt:
+            tb_writer.flush()
