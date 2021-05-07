@@ -75,7 +75,10 @@ def retrieve_checkpoint(
             return checkpoint
     return None
 
-def get_config(ini: str, BASE_PATH: str="configs") -> Tuple[Dict[str, Any], Dict[str, Any]]:
+
+def get_config(
+    ini: str, BASE_PATH: str = "configs"
+) -> Tuple[Dict[str, Any], Dict[str, Any], bool]:
     """
     Assumptions:
     - conv_filters is always the same and is a function of env_config
@@ -89,17 +92,20 @@ def get_config(ini: str, BASE_PATH: str="configs") -> Tuple[Dict[str, Any], Dict
 
     env_config = {
         "num_agents": ini_parser.getint("EnvConfig", "num_agents"),
-        "size": (ini_parser.getint("EnvConfig", "size_i"), ini_parser.getint("EnvConfig", "size_j")),
+        "size": (
+            ini_parser.getint("EnvConfig", "size_i"),
+            ini_parser.getint("EnvConfig", "size_j"),
+        ),
         "sight_width": ini_parser.getint("EnvConfig", "sight_width"),
         "sight_dist": ini_parser.getint("EnvConfig", "sight_dist"),
-        "num_crosses": ini_parser.getint("EnvConfig", "num_crosses")
+        "num_crosses": ini_parser.getint("EnvConfig", "num_crosses"),
     }
 
     ray_config = {
         "framework": ini_parser.get("RayConfig", "framework"),
         "train_batch_size": ini_parser.getint("RayConfig", "train_batch_size"),
         "sgd_minibatch_size": ini_parser.getint("RayConfig", "sgd_minibatch_size"),
-        "num_sgd_iter": ini_parser.getint("RayConfig", "num_sgd_iter")
+        "num_sgd_iter": ini_parser.getint("RayConfig", "num_sgd_iter"),
     }
 
     walker_policy = (
@@ -111,17 +117,21 @@ def get_config(ini: str, BASE_PATH: str="configs") -> Tuple[Dict[str, Any], Dict
             np.float32,
         ),  # obs
         Discrete(8),  # action
-        dict()
+        dict(),
     )
-    if ini_parser.getboolean("RayConfig", "heterogenous"):
+    heterogenous = ini_parser.getboolean("RayConfig", "heterogenous")
+    if heterogenous:
         multiagent = {
-            "policies": {f"Agent{k}": deepcopy(walker_policy) for k in range(env_config["num_agents"])},
-            "policy_mapping_fn": lambda agent_id: agent_id
+            "policies": {
+                f"Agent{k}": deepcopy(walker_policy)
+                for k in range(env_config["num_agents"])
+            },
+            "policy_mapping_fn": lambda agent_id: agent_id,
         }
     else:
         multiagent = {
             "policies": {"walker": walker_policy},
-            "policy_mapping_fn": lambda agent_id: "walker"
+            "policy_mapping_fn": lambda agent_id: "walker",
         }
 
     ray_config["multiagent"] = multiagent
@@ -129,12 +139,11 @@ def get_config(ini: str, BASE_PATH: str="configs") -> Tuple[Dict[str, Any], Dict
         "dim": 3,
         "conv_filters": [
             [16, [4, 4], 1],
-            [32, [env_config["sight_dist"], 2 * env_config["sight_width"] + 1], 1]
-        ]
+            [32, [env_config["sight_dist"], 2 * env_config["sight_width"] + 1], 1],
+        ],
     }
 
-    return env_config, ray_config
-
+    return env_config, ray_config, heterogenous
 
 
 class ArgParser(BaseParser):
