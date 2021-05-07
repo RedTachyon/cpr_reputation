@@ -4,7 +4,7 @@ from cpr_reputation.utils import sigmoid
 
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Union
 import random
 
 import numpy as np
@@ -94,26 +94,8 @@ class Position(namedtuple("Position", ["i", "j"])):
             return self.i == other[0] and self.j == other[1]
         raise ValueError("A Position can only be compared with a Position-like item.")
 
-    # def __iter__(self) -> Tuple[int, int]:
-    #     return (self.i, self.j)
-
-    #   def __getitem__(self, key: int) -> int:
-    #       if key == 0:
-    #           return self.i
-    #       if key == 1:
-    #           return self.j
-    #       raise ValueError("Position only has two coordinates!")
-
     def __hash__(self) -> int:
         return hash((self.i, self.j))
-
-    #   def __setitem__(self, key: int, value: int):
-    #       if key == 0:
-    #           self.i = value
-    #       elif key == 1:
-    #           self.j == value
-    #       else:
-    #           raise ValueError("Position only has two coordinates!")
 
     def is_between(self, pos1: Position, pos2: Position):
         """Checks whether a position is between two antipodal bounding box coordinates.
@@ -249,7 +231,7 @@ def regenerate_apples(board: Board) -> Board:
     return updated_board
 
 
-def apple_values_ternary(board: Board) -> Dict[Position, int]:
+def apple_values_ternary(board: Board, position: Position) -> int:
     """
     Type 0: there is an(other) apple in range (it can immediately regrow)
     Type 1: there isn't another apple in range, but another position in range is type 0
@@ -286,14 +268,25 @@ def apple_values_ternary(board: Board) -> Dict[Position, int]:
         return 2
 
     recur(Position(0, 0))
-    return cache
+    return cache[position]
 
 
-def apple_values(board: Board, position: Position, factor: float = 1.0) -> float:
+def apple_values_subtractive(
+    board: Board, position: Position, factor: float = 1.0
+) -> float:
     """reputational magnitude of taking an apple is inversely proportional to the number of apples around it"""
     kernel = NEIGHBOR_KERNEL
     neighbor_apple_sums = convolve(board, kernel, mode="constant")
     return (kernel.sum() - neighbor_apple_sums[tuple(position)]) / factor
+
+
+def apple_values(method: str, board: Board, **kwargs) -> Union[float, int]:
+    """dispatch"""
+    if method == "subtractive":
+        return apple_values_subtractive(board, **kwargs)
+    if method == "ternary":
+        return apple_values_ternary(board, **kwargs)
+    raise ValueError(f"Improper method argument {method}")
 
 
 def walls_board(size: Tuple[int, int]) -> Board:
@@ -318,6 +311,7 @@ class HarvestGame:
         beam_width: int = 5,
         beam_dist: int = 10,
         num_crosses: int = 10,  # number of apple-crosses to start with
+        apple_values_method: str = "subtractive",
     ):
 
         self.num_agents = num_agents
@@ -327,6 +321,7 @@ class HarvestGame:
         self.beam_width = beam_width
         self.beam_dist = beam_dist
         self.num_crosses = num_crosses
+        self.apple_values_method = apple_values_method
 
         self.board = np.array([[]])
         self.agents: Dict[str, Walker] = dict()
@@ -467,7 +462,10 @@ class HarvestGame:
         if self.board[current_pos]:  # apple in new cell
             self.board[current_pos] = 0
             self.reputation[agent_id] += apple_values(
-                self.board, current_pos, factor=NEIGHBOR_KERNEL.sum()
+                self.apple_values_method,
+                self.board,
+                position=current_pos,
+                factor=NEIGHBOR_KERNEL.sum(),
             )
             return 1.0
         else:  # no apple in new cell
@@ -487,7 +485,7 @@ class HarvestGame:
         return rewards
 
     def get_beam_bounds(self, agent_id: str) -> Tuple[Position, Position]:
-        """Returns indices of the (top left, bottom right) (inclusive) boundaries
+        """Returns indices of the (forward left, backward right) (inclusive) boundaries
         of an agent's vision."""
         agent = self.agents[agent_id]
         rot = agent.rot
