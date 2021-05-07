@@ -84,6 +84,7 @@ class HarvestRecorder(HarvestEnv):
             fig, images, interval=50, blit=True, repeat_delay=10000
         )
         ani.save(filename)
+        print(f"Successfully wrote {filename}")
 
 
 if __name__ == "__main__":
