@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from argparse import ArgumentParser
 
 from cpr_reputation.environments import HarvestEnv
 from cpr_reputation.utils import get_config, ArgParser
@@ -20,16 +19,17 @@ ini = args.ini
 if ini[-4:] == ".ini":
     ini = ini[:-4]
 
+
 class HarvestRecorder(HarvestEnv):
     def __init__(
-            self,
-            config: dict,
-            trainer,
-            checkpoint_no: int = 1,
-            checkpoints_superdir: str = "ckpnts",
-            ini: str = ini,
-            heterogenous: bool = heterogenous,
-            **kwargs,
+        self,
+        config: dict,
+        trainer,
+        checkpoint_no: int = 1,
+        checkpoints_superdir: str = "ckpnts",
+        ini: str = ini,
+        heterogenous: bool = heterogenous,
+        **kwargs,
     ):
         super().__init__(config, **kwargs)
         self.checkpoints_superdir = checkpoints_superdir
