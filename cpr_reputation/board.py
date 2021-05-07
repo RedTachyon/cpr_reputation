@@ -94,26 +94,8 @@ class Position(namedtuple("Position", ["i", "j"])):
             return self.i == other[0] and self.j == other[1]
         raise ValueError("A Position can only be compared with a Position-like item.")
 
-    # def __iter__(self) -> Tuple[int, int]:
-    #     return (self.i, self.j)
-
-    #   def __getitem__(self, key: int) -> int:
-    #       if key == 0:
-    #           return self.i
-    #       if key == 1:
-    #           return self.j
-    #       raise ValueError("Position only has two coordinates!")
-
     def __hash__(self) -> int:
         return hash((self.i, self.j))
-
-    #   def __setitem__(self, key: int, value: int):
-    #       if key == 0:
-    #           self.i = value
-    #       elif key == 1:
-    #           self.j == value
-    #       else:
-    #           raise ValueError("Position only has two coordinates!")
 
     def is_between(self, pos1: Position, pos2: Position):
         """Checks whether a position is between two antipodal bounding box coordinates.
@@ -503,7 +485,7 @@ class HarvestGame:
         return rewards
 
     def get_beam_bounds(self, agent_id: str) -> Tuple[Position, Position]:
-        """Returns indices of the (top left, bottom right) (inclusive) boundaries
+        """Returns indices of the (forward left, backward right) (inclusive) boundaries
         of an agent's vision."""
         agent = self.agents[agent_id]
         rot = agent.rot

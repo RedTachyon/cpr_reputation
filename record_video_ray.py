@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from cpr_reputation.board import Position, SHOOT, in_bounds
 from cpr_reputation.environments import HarvestEnv
 from cpr_reputation.utils import get_config, ArgParser
 
@@ -11,7 +12,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import animation
 
-cmap = mpl.colors.ListedColormap(["brown", "green", "blue", "grey"])
+cmap = mpl.colors.ListedColormap(["brown", "green", "blue", "grey", "red"])
 
 args = ArgParser()
 env_config, ray_config, heterogenous = get_config(args.ini)
@@ -75,9 +76,28 @@ class HarvestRecorder(HarvestEnv):
             obs, rewards, done, info = self.step(actions)
 
             board = self.game.board.copy()
-            for _, agent in self.game.agents.items():
+            for agent_id, agent in self.game.agents.items():
                 board[agent.pos] = 2
+                if actions[agent_id] == SHOOT:
+                    (
+                        (bound1_i, bound1_j),
+                        (bound2_i, bound2_j),
+                    ) = self.game.get_beam_bounds(agent_id)
+                    if bound1_i > bound2_i:
+                        inc_i = -1
+                    else:
+                        inc_i = 1
+                    if bound1_j > bound2_j:
+                        inc_j = -1
+                    else:
+                        inc_j = 1
+                    size = Position(*board.shape)
+                    for i in range(bound1_i, bound2_i, inc_i):
+                        for j in range(bound1_j, bound2_j, inc_j):
+                            if in_bounds(Position(i, j), size) and board[i, j] == 0:
+                                board[i, j] = 4
             board[self.game.walls.astype(bool)] = 3
+            board[0, 0] = 4
             im = ax.imshow(board, cmap=cmap)
             images.append([im])
 
