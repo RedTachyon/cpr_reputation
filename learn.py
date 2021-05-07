@@ -39,5 +39,5 @@ if __name__ == "__main__":
         result_dict = trainer.train()
 
         print(iteration, result_dict)
-        if iteration % 2 == 0:
+        if iteration % 10 == 0:
             trainer.save(f"ckpnts/{args.ini}")
