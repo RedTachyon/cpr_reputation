@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     trainer = ppo.PPOTrainer(
         env="CPRHarvestEnv-v0",
-        logger_creator=lambda cfg: UnifiedLogger(cfg, "log"),
+        logger_creator=lambda cfg: UnifiedLogger(cfg, f"log/{args.ini}"),
         config=ray_config,
     )
 
