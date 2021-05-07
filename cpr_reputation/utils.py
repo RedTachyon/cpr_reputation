@@ -1,7 +1,12 @@
 import os
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+from configparser import ConfigParser
+from pathlib import Path
+from copy import deepcopy
 
+from typarse import BaseParser
 import numpy as np
+from gym.spaces import Discrete, Box
 
 RAY_RESULTS = "//home/quinn/ray_results"
 
@@ -69,3 +74,82 @@ def retrieve_checkpoint(
         if checkpoint is not None:
             return checkpoint
     return None
+
+def get_config(ini: str, BASE_PATH: str="configs") -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """
+    Assumptions:
+    - conv_filters is always the same and is a function of env_config
+    """
+    base = Path(BASE_PATH)
+    if ini[-4:] != ".ini":
+        ini += ".ini"
+    ini_file = base / ini
+    ini_parser = ConfigParser()
+    ini_parser.read(ini_file)
+
+    env_config = {
+        "num_agents": ini_parser.getint("EnvConfig", "num_agents"),
+        "size": (ini_parser.getint("EnvConfig", "size_i"), ini_parser.getint("EnvConfig", "size_j")),
+        "sight_width": ini_parser.getint("EnvConfig", "sight_width"),
+        "sight_dist": ini_parser.getint("EnvConfig", "sight_dist"),
+        "num_crosses": ini_parser.getint("EnvConfig", "num_crosses")
+    }
+
+    ray_config = {
+        "framework": ini_parser.get("RayConfig", "framework"),
+        "train_batch_size": ini_parser.getint("RayConfig", "train_batch_size"),
+        "sgd_minibatch_size": ini_parser.getint("RayConfig", "sgd_minibatch_size"),
+        "num_sgd_iter": ini_parser.getint("RayConfig", "num_sgd_iter")
+    }
+
+    walker_policy = (
+        None,
+        Box(
+            ini_parser.getfloat("RayConfig", "obs_lower_bound"),
+            ini_parser.getfloat("RayConfig", "obs_upper_bound"),
+            (env_config["sight_dist"], 2 * env_config["sight_width"] + 1, 4),
+            np.float32,
+        ),  # obs
+        Discrete(8),  # action
+        dict()
+    )
+    if ini_parser.getboolean("RayConfig", "heterogenous"):
+        multiagent = {
+            "policies": {f"Agent{k}": deepcopy(walker_policy) for k in range(env_config["num_agents"])},
+            "policy_mapping_fn": lambda agent_id: agent_id
+        }
+    else:
+        multiagent = {
+            "policies": {"walker": walker_policy},
+            "policy_mapping_fn": lambda agent_id: "walker"
+        }
+
+    ray_config["multiagent"] = multiagent
+    ray_config["model"] = {
+        "dim": 3,
+        "conv_filters": [
+            [16, [4, 4], 1],
+            [32, [env_config["sight_dist"], 2 * env_config["sight_width"] + 1], 1]
+        ]
+    }
+
+    return env_config, ray_config
+
+
+
+class ArgParser(BaseParser):
+    checkpoint: Optional[int]
+    ini: Optional[str] = "default_small"
+    # wandb_token: Optional[str]  # TODO: add this somehow at some point?
+
+    _abbrev = {
+        "checkpoint": "c",
+        "ini": "i"
+        # "wandb_token": "w",
+    }
+
+    _help = {
+        "checkpoint": "From which checkpoint the training should be possibly resumed",
+        "ini": "Name of the .ini file you want to config env and ray with."
+        # "wandb_token": "Path to the wandb token for wandb integration"
+    }
