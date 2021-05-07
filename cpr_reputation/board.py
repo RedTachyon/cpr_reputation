@@ -289,7 +289,9 @@ def apple_values_ternary(board: Board, position: Position) -> int:
     return cache[position]
 
 
-def apple_values_subtractive(board: Board, position: Position, factor: float = 1.0) -> float:
+def apple_values_subtractive(
+    board: Board, position: Position, factor: float = 1.0
+) -> float:
     """reputational magnitude of taking an apple is inversely proportional to the number of apples around it"""
     kernel = NEIGHBOR_KERNEL
     neighbor_apple_sums = convolve(board, kernel, mode="constant")
@@ -302,6 +304,7 @@ def apple_values(method: str, board: Board, **kwargs) -> Union[float, int]:
         return apple_values_subtractive(board, **kwargs)
     if method == "ternary":
         return apple_values_ternary(board, **kwargs)
+    raise ValueError(f"Improper method argument {method}")
 
 
 def walls_board(size: Tuple[int, int]) -> Board:
@@ -326,6 +329,7 @@ class HarvestGame:
         beam_width: int = 5,
         beam_dist: int = 10,
         num_crosses: int = 10,  # number of apple-crosses to start with
+        apple_values_method: str = "subtractive",
     ):
 
         self.num_agents = num_agents
@@ -335,6 +339,7 @@ class HarvestGame:
         self.beam_width = beam_width
         self.beam_dist = beam_dist
         self.num_crosses = num_crosses
+        self.apple_values_method = apple_values_method
 
         self.board = np.array([[]])
         self.agents: Dict[str, Walker] = dict()
@@ -475,7 +480,10 @@ class HarvestGame:
         if self.board[current_pos]:  # apple in new cell
             self.board[current_pos] = 0
             self.reputation[agent_id] += apple_values(
-                "subtractive", self.board, position=current_pos, factor=NEIGHBOR_KERNEL.sum()
+                self.apple_values_method,
+                self.board,
+                position=current_pos,
+                factor=NEIGHBOR_KERNEL.sum(),
             )
             return 1.0
         else:  # no apple in new cell
