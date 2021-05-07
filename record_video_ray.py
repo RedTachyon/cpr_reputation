@@ -55,21 +55,22 @@ class HarvestRecorder(HarvestEnv):
             filename = f"harvest-anim-{self.ini}-{self.checkpoint_no}.mp4"
         fig, ax = plt.subplots()
 
-        obs = self.reset()
         images = list()
         done = {"__all__": False}
         while not done["__all__"]:
+            actions = dict()
             if self.heterogenous:
-                actions = dict()
                 for agent_id, _ in self.game.agents.items():
                     actions[agent_id] = self.trainer.compute_action(
                         observation=self.game.get_agent_obs(agent_id),
                         policy_id=agent_id,
                     )
             else:
-                actions = self.trainer.compute_action(
-                    observation=obs, policy_id="walker",
-                )
+                for agent_id, _ in self.game.agents.items():
+                    actions[agent_id] = self.trainer.compute_action(
+                        observation=self.game.get_agent_obs(agent_id),
+                        policy_id="walker",
+                    )
 
             obs, rewards, done, info = self.step(actions)
 
