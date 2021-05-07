@@ -4,7 +4,7 @@ from cpr_reputation.utils import sigmoid
 
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Union
 import random
 
 import numpy as np
@@ -249,7 +249,7 @@ def regenerate_apples(board: Board) -> Board:
     return updated_board
 
 
-def apple_values_ternary(board: Board) -> Dict[Position, int]:
+def apple_values_ternary(board: Board, position: Position) -> int:
     """
     Type 0: there is an(other) apple in range (it can immediately regrow)
     Type 1: there isn't another apple in range, but another position in range is type 0
@@ -286,14 +286,22 @@ def apple_values_ternary(board: Board) -> Dict[Position, int]:
         return 2
 
     recur(Position(0, 0))
-    return cache
+    return cache[position]
 
 
-def apple_values(board: Board, position: Position, factor: float = 1.0) -> float:
+def apple_values_subtractive(board: Board, position: Position, factor: float = 1.0) -> float:
     """reputational magnitude of taking an apple is inversely proportional to the number of apples around it"""
     kernel = NEIGHBOR_KERNEL
     neighbor_apple_sums = convolve(board, kernel, mode="constant")
     return (kernel.sum() - neighbor_apple_sums[tuple(position)]) / factor
+
+
+def apple_values(method: str, board: Board, **kwargs) -> Union[float, int]:
+    """dispatch"""
+    if method == "subtractive":
+        return apple_values_subtractive(board, **kwargs)
+    if method == "ternary":
+        return apple_values_ternary(board, **kwargs)
 
 
 def walls_board(size: Tuple[int, int]) -> Board:
@@ -467,7 +475,7 @@ class HarvestGame:
         if self.board[current_pos]:  # apple in new cell
             self.board[current_pos] = 0
             self.reputation[agent_id] += apple_values(
-                self.board, current_pos, factor=NEIGHBOR_KERNEL.sum()
+                "subtractive", self.board, position=current_pos, factor=NEIGHBOR_KERNEL.sum()
             )
             return 1.0
         else:  # no apple in new cell
