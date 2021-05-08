@@ -29,6 +29,19 @@ def sigmoid(x: float) -> float:
     return 1 / (1 + np.exp(-x))
 
 
+def gini_coef(x: List[float]):
+    x = np.array(x)
+    if len(x) == 0 or x.mean() == 0:
+        return 0.0
+    return abs(np.subtract.outer(x, x)).mean() / (2 * x.mean())
+
+
+def sustainability_metric(rewards: List[Dict[str, float]]):
+    total_rewards = [list(r.values()) for r in rewards]
+    zero_rewards = sum([rewards.count(0) for rewards in total_rewards])
+    return (len(total_rewards) - zero_rewards) / len(total_rewards)
+
+
 def all_dirs_under(path: str):
     """Iterates through all dirs that are under the given path."""
     for cur_path, dirnames, filenames in os.walk(path):
@@ -162,6 +175,7 @@ def get_config(
 
 
 class CPRCallbacks(DefaultCallbacks):
+
     def on_episode_start(
         self,
         *,
@@ -172,7 +186,10 @@ class CPRCallbacks(DefaultCallbacks):
         env_index: Optional[int] = None,
         **kwargs,
     ) -> None:
-        episode.custom_metrics["num_shots"] = 0
+        episode.user_data["num_shots"] = []
+        episode.user_data["rewards"] = []
+        episode.user_data["gini"] = []
+        episode.user_data["sustainability"] = []
 
     def on_episode_step(
         self,
@@ -183,10 +200,15 @@ class CPRCallbacks(DefaultCallbacks):
         env_index: Optional[int] = None,
         **kwargs,
     ) -> None:
+        num_shots = {}
+        rewards = {}
         for agent_id, _ in base_env.get_unwrapped()[0].game.agents.items():
-            action = episode.last_action_for(agent_id)
-            if action == SHOOT:
-                episode.custom_metrics["num_shots"] += 1
+            num_shots[agent_id] = episode.last_action_for(agent_id) == SHOOT
+            rewards[agent_id] = episode.prev_reward_for(agent_id)
+        episode.user_data["num_shots"].append(num_shots)
+        episode.user_data["rewards"].append(rewards)
+        episode.user_data["gini"].append(gini_coef(list(episode.agent_rewards.values())))
+        episode.user_data["sustainability"].append(sustainability_metric(episode.user_data["rewards"]))
 
     def on_episode_end(
         self,
@@ -198,7 +220,15 @@ class CPRCallbacks(DefaultCallbacks):
         env_index: Optional[int] = None,
         **kwargs,
     ) -> None:
-        print(f"{episode.custom_metrics['num_shots']} shots")
+        # save metrics by adding to `episode.custom_metrics`
+        episode.custom_metrics["num_shots"] = sum(
+            [sum(list(num_shots.values())) for num_shots in episode.user_data["num_shots"]]
+        ) / episode.length
+        episode.custom_metrics["rewards"] = sum(
+            [sum(list(rewards.values())) for rewards in episode.user_data["rewards"]]
+        ) / episode.length
+        episode.custom_metrics["gini"] = episode.user_data["gini"][-1]
+        episode.custom_metrics["sustainability"] = episode.user_data["sustainability"][-1]
 
 
 class ArgParser(BaseParser):
