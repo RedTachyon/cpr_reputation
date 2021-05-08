@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from cpr_reputation.utils import sigmoid
+from cpr_reputation.utils import sigmoid, GO_FORWARD, GO_BACKWARD, GO_LEFT, \
+    GO_RIGHT, ROT_LEFT, ROT_RIGHT, SHOOT, NOOP
 
 from collections import namedtuple
 from dataclasses import dataclass
@@ -13,15 +14,6 @@ from scipy.ndimage import convolve
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-
-GO_FORWARD = 0
-GO_BACKWARD = 1
-GO_LEFT = 2
-GO_RIGHT = 3
-ROT_LEFT = 4
-ROT_RIGHT = 5
-SHOOT = 6
-NOOP = 7
 
 # Kernel to compute the number of surrounding apples - not the same as in DM paper
 NEIGHBOR_KERNEL = np.array(

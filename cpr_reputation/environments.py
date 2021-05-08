@@ -42,9 +42,6 @@ class HarvestEnv(RayMultiAgentEnv):
         done = {agent_id: isdone for agent_id, _ in self.game.agents.items()}
         done["__all__"] = isdone
 
-        # num_shots = sum(1 for key, action in actions.items() if action == SHOOT)
-
-        # info = {"m_shots": num_shots}
         info = dict()
 
         info = {}

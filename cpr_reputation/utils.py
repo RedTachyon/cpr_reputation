@@ -4,11 +4,25 @@ from configparser import ConfigParser
 from pathlib import Path
 from copy import deepcopy
 
+from ray.rllib import RolloutWorker, BaseEnv, Policy
+from ray.rllib.agents.callbacks import DefaultCallbacks
+from ray.rllib.evaluation import MultiAgentEpisode
+from ray.rllib.utils.typing import PolicyID
 from typarse import BaseParser
 import numpy as np
 from gym.spaces import Discrete, Box
 
+
 RAY_RESULTS = "//home/quinn/ray_results"
+
+GO_FORWARD = 0
+GO_BACKWARD = 1
+GO_LEFT = 2
+GO_RIGHT = 3
+ROT_LEFT = 4
+ROT_RIGHT = 5
+SHOOT = 6
+NOOP = 7
 
 
 def sigmoid(x: float) -> float:
@@ -106,6 +120,7 @@ def get_config(
         "train_batch_size": ini_parser.getint("RayConfig", "train_batch_size"),
         "sgd_minibatch_size": ini_parser.getint("RayConfig", "sgd_minibatch_size"),
         "num_sgd_iter": ini_parser.getint("RayConfig", "num_sgd_iter"),
+        "callbacks": eval(ini_parser.get("RayConfig", "callbacks")),
     }
 
     walker_policy = (
@@ -144,6 +159,46 @@ def get_config(
     }
 
     return env_config, ray_config, heterogenous
+
+
+class CPRCallbacks(DefaultCallbacks):
+    def on_episode_start(
+        self,
+        *,
+        worker: "RolloutWorker",
+        base_env: BaseEnv,
+        policies: Dict[PolicyID, Policy],
+        episode: MultiAgentEpisode,
+        env_index: Optional[int] = None,
+        **kwargs,
+    ) -> None:
+        episode.custom_metrics["num_shots"] = 0
+
+    def on_episode_step(
+        self,
+        *,
+        worker: "RolloutWorker",
+        base_env: BaseEnv,
+        episode: MultiAgentEpisode,
+        env_index: Optional[int] = None,
+        **kwargs,
+    ) -> None:
+        for agent_id, _ in base_env.get_unwrapped()[0].game.agents.items():
+            action = episode.last_action_for(agent_id)
+            if action == SHOOT:
+                episode.custom_metrics["num_shots"] += 1
+
+    def on_episode_end(
+        self,
+        *,
+        worker: "RolloutWorker",
+        base_env: BaseEnv,
+        policies: Dict[PolicyID, Policy],
+        episode: MultiAgentEpisode,
+        env_index: Optional[int] = None,
+        **kwargs,
+    ) -> None:
+        print(f"{episode.custom_metrics['num_shots']} shots")
 
 
 class ArgParser(BaseParser):
