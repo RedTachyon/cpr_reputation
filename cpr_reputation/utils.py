@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple  # Sequence
 from configparser import ConfigParser
 from pathlib import Path
 from copy import deepcopy
+from collections import defaultdict
 
 # from itertools import product
 
@@ -33,10 +34,13 @@ def sigmoid(x: float) -> float:
 
 # average pairwise distance, weighted to [0, 1]
 def gini(x: List[float]):
+    """Equality is near one, inequality is near zero"""
     x = np.array(x)
-    if len(x) == 0 or x.mean() == 0:
-        return 0.0
-    return abs(np.subtract.outer(x, x)).mean() / (2 * x.mean())
+    if x.shape[0] == 0:
+        raise ValueError("Gini score of empty list is undefined")
+    if x.sum() == 0.0:
+        return 1.0
+    return 1.0 - abs(np.subtract.outer(x, x)).sum() / 2 / x.shape[0] / x.sum()
 
 
 def gini_coef(d: Dict[str, float]) -> float:
@@ -115,6 +119,11 @@ def retrieve_checkpoint(
         if checkpoint is not None:
             return checkpoint
     return None
+
+
+def softmax_dict(reputation: Dict[str, float], agent_id: str) -> float:
+    reputations = np.array(list(reputation.values()))
+    return reputation[agent_id] / np.exp(reputations).sum()
 
 
 def get_config(
@@ -217,12 +226,13 @@ class CPRCallbacks(DefaultCallbacks):
         env_index: Optional[int] = None,
         **kwargs,
     ) -> None:
-        episode.user_data["rewards"] = []
-        episode.user_data["rewards_gini"] = []
-        episode.user_data["reputations"] = []
-        episode.user_data["reputations_gini"] = []
-        episode.user_data["num_shots"] = []
-        episode.user_data["sustainability"] = []
+        episode.user_data["rewards"] = list()
+        episode.user_data["rewards_dict"] = defaultdict(float)
+        episode.user_data["rewards_gini"] = list()
+        episode.user_data["reputations"] = list()
+        episode.user_data["reputations_gini"] = list()
+        episode.user_data["num_shots"] = list()
+        episode.user_data["sustainability"] = list()
 
     def on_episode_step(
         self,
@@ -233,14 +243,15 @@ class CPRCallbacks(DefaultCallbacks):
         env_index: Optional[int] = None,
         **kwargs,
     ) -> None:
-        num_shots = {}
-        rewards = {}
+        num_shots = dict()
+        rewards = dict()
         for agent_id, _ in base_env.get_unwrapped()[0].game.agents.items():
             num_shots[agent_id] = episode.last_action_for(agent_id) == SHOOT
             rewards[agent_id] = episode.prev_reward_for(agent_id)
+            episode.user_data["rewards_dict"][agent_id] += rewards[agent_id]
         reputations = base_env.get_unwrapped()[0].game.reputation
         episode.user_data["rewards"].append(rewards)
-        episode.user_data["rewards_gini"].append(gini_coef(rewards))
+        episode.user_data["rewards_gini"].append(gini_coef(episode.user_data["rewards_dict"]))
         episode.user_data["reputations"].append(reputations)
         episode.user_data["reputations_gini"].append(gini_coef(reputations))
         episode.user_data["num_shots"].append(num_shots)

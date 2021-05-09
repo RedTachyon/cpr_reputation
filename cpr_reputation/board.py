@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from cpr_reputation.utils import (
-    sigmoid,
+    softmax_dict,
     GO_FORWARD,
     GO_BACKWARD,
     GO_LEFT,
@@ -546,7 +546,7 @@ class HarvestGame:
         reputation_board = np.zeros_like(self.board)
         for other_agent_id, other_agent in self.agents.items():
             agent_board[other_agent.pos] = 1
-            reputation_board[other_agent.pos] = sigmoid(self.reputation[agent_id])
+            reputation_board[other_agent.pos] = softmax_dict(self.reputation, other_agent_id)
         wall_board = self.walls
 
         # Add any extra layers before this line
