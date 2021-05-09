@@ -140,6 +140,7 @@ def get_config(
         "num_crosses": ini_parser.getint("EnvConfig", "num_crosses"),
         "apple_values_method": ini_parser.get("EnvConfig", "apple_values_method"),
         "tagging_values_method": ini_parser.get("EnvConfig", "tagging_values_method"),
+        "sustainability_metric": ini_parser.get("EnvConfig", "sustainability_metric"),
     }
 
     ray_config = {
@@ -147,14 +148,13 @@ def get_config(
         "train_batch_size": ini_parser.getint("RayConfig", "train_batch_size"),
         "sgd_minibatch_size": ini_parser.getint("RayConfig", "sgd_minibatch_size"),
         "num_sgd_iter": ini_parser.getint("RayConfig", "num_sgd_iter"),
+        "callbacks": eval(ini_parser.get("RayConfig", "callbacks")),  # class name
     }
 
     run_config = {
         "heterogeneous": ini_parser.getboolean("RunConfig", "heterogeneous"),
         "num_iterations": ini_parser.getint("RunConfig", "num_iterations"),
         "verbose": ini_parser.getboolean("RunConfig", "verbose"),
-        "callbacks": eval(ini_parser.get("RunConfig", "callbacks")),  # class name
-        "sustainability_metric": ini_parser.get("RunConfig", "sustainability_metric"),
     }
 
     walker_policy = (
@@ -196,9 +196,8 @@ def get_config(
 
 class CPRCallbacks(DefaultCallbacks):
 
-    def __init__(self, run_config):
+    def __init__(self):
         super().__init__()
-        self.sustainability_metric = sustainability_metric(run_config["sustainability_metric"])
 
     def on_episode_start(
         self,
@@ -228,17 +227,17 @@ class CPRCallbacks(DefaultCallbacks):
     ) -> None:
         num_shots = {}
         rewards = {}
-        reputations = {}
         for agent_id, _ in base_env.get_unwrapped()[0].game.agents.items():
             num_shots[agent_id] = episode.last_action_for(agent_id) == SHOOT
             rewards[agent_id] = episode.prev_reward_for(agent_id)
-            reputations[agent_id] = base_env.get_unwrapped()[0].game.reputation
+        reputations = base_env.get_unwrapped()[0].game.reputation
         episode.user_data["rewards"].append(rewards)
         episode.user_data["rewards_gini"].append(gini_coef(rewards))
         episode.user_data["reputations"].append(reputations)
         episode.user_data["reputations_gini"].append(gini_coef(reputations))
         episode.user_data["num_shots"].append(num_shots)
-        episode.user_data["sustainability"].append(self.sustainability_metric(episode.user_data["rewards"]))
+        sus_metric = sustainability_metric(base_env.get_unwrapped()[0].game.sustainability_metric)
+        episode.user_data["sustainability"].append(sus_metric(episode.user_data["rewards"]))
 
     def on_episode_end(
         self,
@@ -254,7 +253,7 @@ class CPRCallbacks(DefaultCallbacks):
         episode.custom_metrics["rewards"] = sum(
             [sum(list(rewards.values())) for rewards in episode.user_data["rewards"]]
         ) / episode.length
-        episode.custom_metrics["rewards_gini"] = episode.user_data["gini"][-1]
+        episode.custom_metrics["rewards_gini"] = episode.user_data["rewards_gini"][-1]
         episode.custom_metrics["reputations"] = sum(
             [sum(list(reputations.values())) for reputations in episode.user_data["reputations"]]
         ) / episode.length

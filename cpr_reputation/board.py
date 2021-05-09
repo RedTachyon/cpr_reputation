@@ -318,6 +318,7 @@ class HarvestGame:
         num_crosses: int = 10,  # number of apple-crosses to start with
         apple_values_method = None,  # reputation adjustment after gathering apple
         tagging_values_method = None,  # reputation adjustment after tagging
+        sustainability_metric = None,  # how to calculate sustainability score
     ):
 
         self.num_agents = num_agents
@@ -330,6 +331,7 @@ class HarvestGame:
 
         self.apple_values_method = apple_values_method
         self.tagging_values_method = tagging_values_method
+        self.sustainability_metric = sustainability_metric
 
         self.board = np.array([[]])
         self.agents: Dict[str, Walker] = dict()
