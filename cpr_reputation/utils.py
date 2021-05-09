@@ -195,9 +195,11 @@ def get_config(
     return env_config, ray_config, run_config
 
 
-def gini(rewards: Sequence[float]) -> float:
-    """https://en.wikipedia.org/wiki/Gini_coefficient#Calculation"""
-    return 1 - sum(sum(abs(ri - rk) for ri, rk in product(rewards, rewards))) / 2 / len(rewards) / sum(rewards)
+# ef gini(rewards: Sequence[float]) -> float:
+#    """https://en.wikipedia.org/wiki/Gini_coefficient#Calculation"""
+#    return 1 - sum(sum(abs(ri - rk) for ri, rk in product(rewards, rewards))) / 2 / len(
+#        rewards
+#    ) / sum(rewards)
 
 
 class CPRCallbacks(DefaultCallbacks):

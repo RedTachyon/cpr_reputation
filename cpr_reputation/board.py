@@ -283,6 +283,8 @@ def apple_values_subtractive(
 
 def apple_values(method: str, board: Board, **kwargs) -> Union[float, int]:
     """dispatch"""
+    if method is None:
+        return 0.0
     if method == "subtractive":
         return apple_values_subtractive(board, **kwargs)
     if method == "ternary":
@@ -297,7 +299,9 @@ def tagging_values_simple_linear(
 
 
 def tagging_values(method: str, **kwargs) -> Union[float, int]:
-    """dispatch"""
+    """dispatch - if initialized to defaults then 0"""
+    if method is None:
+        return 0.0
     if method == "simple_linear":
         return tagging_values_simple_linear(**kwargs)
     raise ValueError(f"Improper tagging value argument {method}")
@@ -460,8 +464,8 @@ class HarvestGame:
             self._rotate_agent(agent_id, 1)
         elif action == SHOOT:
             # Shoot a beam
-            # if self.time < 50:
-            #     return 0.0
+            if self.time < 50:
+                return 0.0
             affected_agents = self.get_affected_agents(agent_id)
             for (_agent_id, _agent) in affected_agents:
                 _agent.frozen = 25

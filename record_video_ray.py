@@ -122,9 +122,7 @@ if __name__ == "__main__":
 
     checkpoint_no = args.checkpoint
 
-    recorder = HarvestRecorder(
-        ray_config, trainer, checkpoint_no, **env_config
-    )
+    recorder = HarvestRecorder(ray_config, trainer, checkpoint_no, **env_config)
 
     recorder.record()
 

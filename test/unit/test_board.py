@@ -332,7 +332,9 @@ def test_apples_do_not_disappear_on_step():
 
 def test_regenerate_apples_with_step():
     np.random.seed(0)
-    env = HarvestEnv(config={}, num_agents=18, size=(20, 20))
+    env = HarvestEnv(
+        config={}, num_agents=18, size=(20, 20), apple_values_method="subtractive"
+    )
     env.reset()
 
     # start all agents along the west wall, facing east
@@ -354,7 +356,7 @@ def test_regenerate_apples_with_step():
     assert board_end.sum() > board_middle.sum()
 
 
-def test_apple_values():
+def test_apple_values_subtractive():
     np.random.seed(0)
     env1 = HarvestGame(num_agents=2, size=Position(10, 10))
     assert (
