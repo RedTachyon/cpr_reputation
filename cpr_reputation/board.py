@@ -1,6 +1,16 @@
 from __future__ import annotations
 
-from cpr_reputation.utils import sigmoid
+from cpr_reputation.utils import (
+    softmax_dict,
+    GO_FORWARD,
+    GO_BACKWARD,
+    GO_LEFT,
+    GO_RIGHT,
+    ROT_LEFT,
+    ROT_RIGHT,
+    SHOOT,
+    NOOP,
+)
 
 from collections import namedtuple
 from dataclasses import dataclass
@@ -13,15 +23,6 @@ from scipy.ndimage import convolve
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-
-GO_FORWARD = 0
-GO_BACKWARD = 1
-GO_LEFT = 2
-GO_RIGHT = 3
-ROT_LEFT = 4
-ROT_RIGHT = 5
-SHOOT = 6
-NOOP = 7
 
 # Kernel to compute the number of surrounding apples - not the same as in DM paper
 NEIGHBOR_KERNEL = np.array(
@@ -281,12 +282,29 @@ def apple_values_subtractive(
 
 
 def apple_values(method: str, board: Board, **kwargs) -> Union[float, int]:
-    """dispatch"""
+    """dispatch - defaults to 0 if method is none """
+    if method is None or method == "None":
+        return 0.0
     if method == "subtractive":
         return apple_values_subtractive(board, **kwargs)
     if method == "ternary":
         return apple_values_ternary(board, **kwargs)
-    raise ValueError(f"Improper method argument {method}")
+    raise ValueError(f"Improper apple value argument {method}")
+
+
+def tagging_values_simple_linear(
+    predator_reputation: float, prey_reputation: float, multiplier: float = -0.1
+) -> float:
+    return multiplier * prey_reputation
+
+
+def tagging_values(method: str, **kwargs) -> Union[float, int]:
+    """dispatch - if initialized to defaults then 0"""
+    if method is None or method == "None":
+        return 0.0
+    if method == "simple_linear":
+        return tagging_values_simple_linear(**kwargs)
+    raise ValueError(f"Improper tagging value argument {method}")
 
 
 def walls_board(size: Tuple[int, int]) -> Board:
@@ -311,7 +329,9 @@ class HarvestGame:
         beam_width: int = 5,
         beam_dist: int = 10,
         num_crosses: int = 10,  # number of apple-crosses to start with
-        apple_values_method: str = "subtractive",
+        apple_values_method=None,  # reputation adjustment after gathering apple
+        tagging_values_method=None,  # reputation adjustment after tagging
+        sustainability_metric=None,  # how to calculate sustainability score
     ):
 
         self.num_agents = num_agents
@@ -321,7 +341,10 @@ class HarvestGame:
         self.beam_width = beam_width
         self.beam_dist = beam_dist
         self.num_crosses = num_crosses
+
         self.apple_values_method = apple_values_method
+        self.tagging_values_method = tagging_values_method
+        self.sustainability_metric = sustainability_metric
 
         self.board = np.array([[]])
         self.agents: Dict[str, Walker] = dict()
@@ -443,14 +466,16 @@ class HarvestGame:
             # Shoot a beam
             if self.time < 50:
                 return 0.0
-
             affected_agents = self.get_affected_agents(agent_id)
-            for _agent in affected_agents:
+            for (_agent_id, _agent) in affected_agents:
                 _agent.frozen = 25
-
-            # self.reputation[agent_id] += 1
-            # does reputation increase after shooting?
-            # see notebook for weird results
+                reputations = {
+                    "predator_reputation": self.reputation[agent_id],
+                    "prey_reputation": self.reputation[_agent_id],
+                }
+                self.reputation[agent_id] += tagging_values(
+                    self.tagging_values_method, **reputations
+                )
         elif action == NOOP:
             # No-op
             return 0.0
@@ -473,7 +498,7 @@ class HarvestGame:
 
     def step(self, actions: Dict[str, int]) -> Dict[str, float]:
         """Process actions and return rewards."""
-        rewards = {agent_id: 0.0 for agent_id in self.agents}
+        rewards = {agent_id: 0.0 for agent_id in self.agents.keys()}
         action_pairs = list(actions.items())
         random.shuffle(action_pairs)
         for agent_id, action in action_pairs:
@@ -504,11 +529,11 @@ class HarvestGame:
 
         return bound1, bound2
 
-    def get_affected_agents(self, agent_id: str) -> List[Walker]:
+    def get_affected_agents(self, agent_id: str) -> List[Tuple[str, Walker]]:
         """Returns a list of agents caught in the ray"""
         bound1, bound2 = self.get_beam_bounds(agent_id)
         return [
-            other_agent
+            (other_name, other_agent)
             for other_name, other_agent in self.agents.items()
             if other_name != agent_id and other_agent.pos.is_between(bound1, bound2)
         ]
@@ -521,7 +546,9 @@ class HarvestGame:
         reputation_board = np.zeros_like(self.board)
         for other_agent_id, other_agent in self.agents.items():
             agent_board[other_agent.pos] = 1
-            reputation_board[other_agent.pos] = sigmoid(self.reputation[agent_id])
+            reputation_board[other_agent.pos] = softmax_dict(
+                self.reputation, other_agent_id
+            )
         wall_board = self.walls
 
         # Add any extra layers before this line

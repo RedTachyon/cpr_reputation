@@ -10,12 +10,11 @@ from cpr_reputation.utils import get_config, ArgParser
 
 args = ArgParser()
 
-env_config, ray_config, _ = get_config(args.ini)
+env_config, ray_config, run_config = get_config(args.ini)
 
 if __name__ == "__main__":
 
     ray.init()
-
     register_env("CPRHarvestEnv-v0", lambda config: HarvestEnv(config, **env_config))
 
     trainer = ppo.PPOTrainer(
@@ -35,9 +34,10 @@ if __name__ == "__main__":
         print("Not pulling from a checkpoint")
         checkpoint = 1
 
-    for iteration in range(checkpoint, 400):
+    for iteration in range(checkpoint, run_config["num_iterations"]):
         result_dict = trainer.train()
 
-        print(iteration, result_dict)
+        if run_config["verbose"]:
+            print(f"Iteration: {iteration}", end="\t")  # , result_dict)
         if iteration % 10 == 0:
             trainer.save(f"ckpnts/{args.ini}")

@@ -10,9 +10,7 @@ class HarvestEnv(RayMultiAgentEnv):
     def __init__(self, config: Dict[str, str], **kwargs):
         super().__init__()
         self.config = config
-        self.time = 0
         self.game = HarvestGame(**kwargs)
-        # self.original_board = np.copy(self.game.board)
 
     def reset(self) -> Dict[str, np.ndarray]:
         self.game.reset()
@@ -23,12 +21,6 @@ class HarvestEnv(RayMultiAgentEnv):
         }
 
     def step(self, actions: Dict[str, int]):
-        # process actions and rewards
-        # if self.game.time < 50:
-        #     actions = {
-        #         agent_id: NOOP if action == SHOOT else action
-        #         for (agent_id, action) in actions.items()
-        #     }
 
         rewards = self.game.step(actions)
 
@@ -42,9 +34,6 @@ class HarvestEnv(RayMultiAgentEnv):
         done = {agent_id: isdone for agent_id, _ in self.game.agents.items()}
         done["__all__"] = isdone
 
-        # num_shots = sum(1 for key, action in actions.items() if action == SHOOT)
-
-        # info = {"m_shots": num_shots}
         info = dict()
 
         info = {}

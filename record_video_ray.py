@@ -15,7 +15,7 @@ from matplotlib import animation
 cmap = mpl.colors.ListedColormap(["brown", "green", "blue", "grey", "red"])
 
 args = ArgParser()
-env_config, ray_config, heterogenous = get_config(args.ini)
+env_config, ray_config, run_config = get_config(args.ini)
 ini = args.ini
 if ini[-4:] == ".ini":
     ini = ini[:-4]
@@ -29,7 +29,7 @@ class HarvestRecorder(HarvestEnv):
         checkpoint_no: int = 1,
         checkpoints_superdir: str = "ckpnts",
         ini: str = ini,
-        heterogenous: bool = heterogenous,
+        heterogenous: bool = run_config["heterogeneous"],
         **kwargs,
     ):
         super().__init__(config, **kwargs)
@@ -122,9 +122,7 @@ if __name__ == "__main__":
 
     checkpoint_no = args.checkpoint
 
-    recorder = HarvestRecorder(
-        ray_config, trainer, checkpoint_no, heterogenous=heterogenous, **env_config
-    )
+    recorder = HarvestRecorder(ray_config, trainer, checkpoint_no, **env_config)
 
     recorder.record()
 
