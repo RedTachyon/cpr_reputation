@@ -30,6 +30,31 @@ def sigmoid(x: float) -> float:
     return 1 / (1 + np.exp(-x))
 
 
+# average pairwise distance, weighted to [0, 1]
+def gini(x: List[float]):
+    x = np.array(x)
+    if len(x) == 0 or x.mean() == 0:
+        return 0.0
+    return abs(np.subtract.outer(x, x)).mean() / (2 * x.mean())
+
+
+def gini_coef(d: Dict[str, float]) -> float:
+    return gini(list(d.values()))
+
+
+# fraction of agent-timesteps with nonzero reward
+def sustainability_metric_deepmind(rewards: List[Dict[str, float]]):
+    total_rewards = [list(r.values()) for r in rewards]
+    zero_rewards = sum([rewards.count(0) for rewards in total_rewards])
+    return (len(total_rewards) - zero_rewards) / len(total_rewards)
+
+
+def sustainability_metric(method: str):
+    if method == "deepmind":
+        return sustainability_metric_deepmind
+    raise ValueError(f"bad sustainability metric: {method}")
+
+
 def all_dirs_under(path: str):
     """Iterates through all dirs that are under the given path."""
     for cur_path, dirnames, filenames in os.walk(path):
@@ -93,7 +118,7 @@ def retrieve_checkpoint(
 
 def get_config(
     ini: str, BASE_PATH: str = "configs"
-) -> Tuple[Dict[str, Any], Dict[str, Any], bool]:
+) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
     """
     Assumptions:
     - conv_filters is always the same and is a function of env_config
@@ -114,6 +139,9 @@ def get_config(
         "sight_width": ini_parser.getint("EnvConfig", "sight_width"),
         "sight_dist": ini_parser.getint("EnvConfig", "sight_dist"),
         "num_crosses": ini_parser.getint("EnvConfig", "num_crosses"),
+        "apple_values_method": ini_parser.get("EnvConfig", "apple_values_method"),
+        "tagging_values_method": ini_parser.get("EnvConfig", "tagging_values_method"),
+        "sustainability_metric": ini_parser.get("EnvConfig", "sustainability_metric"),
     }
 
     ray_config = {
@@ -121,7 +149,13 @@ def get_config(
         "train_batch_size": ini_parser.getint("RayConfig", "train_batch_size"),
         "sgd_minibatch_size": ini_parser.getint("RayConfig", "sgd_minibatch_size"),
         "num_sgd_iter": ini_parser.getint("RayConfig", "num_sgd_iter"),
-        "callbacks": eval(ini_parser.get("RayConfig", "callbacks")),
+        "callbacks": eval(ini_parser.get("RayConfig", "callbacks")),  # class name
+    }
+
+    run_config = {
+        "heterogeneous": ini_parser.getboolean("RunConfig", "heterogeneous"),
+        "num_iterations": ini_parser.getint("RunConfig", "num_iterations"),
+        "verbose": ini_parser.getboolean("RunConfig", "verbose"),
     }
 
     walker_policy = (
@@ -135,8 +169,7 @@ def get_config(
         Discrete(8),  # action
         dict(),
     )
-    heterogenous = ini_parser.getboolean("RayConfig", "heterogenous")
-    if heterogenous:
+    if run_config["heterogeneous"]:
         multiagent = {
             "policies": {
                 f"Agent{k}": deepcopy(walker_policy)
@@ -159,7 +192,7 @@ def get_config(
         ],
     }
 
-    return env_config, ray_config, heterogenous
+    return env_config, ray_config, run_config
 
 
 def gini(rewards: Sequence[float]) -> float:
@@ -168,6 +201,9 @@ def gini(rewards: Sequence[float]) -> float:
 
 
 class CPRCallbacks(DefaultCallbacks):
+    def __init__(self):
+        super().__init__()
+
     def on_episode_start(
         self,
         *,
@@ -178,8 +214,12 @@ class CPRCallbacks(DefaultCallbacks):
         env_index: Optional[int] = None,
         **kwargs,
     ) -> None:
-        episode.custom_metrics["num_shots"] = 0
-        episode.custom_metrics["gini"] = 0
+        episode.user_data["rewards"] = []
+        episode.user_data["rewards_gini"] = []
+        episode.user_data["reputations"] = []
+        episode.user_data["reputations_gini"] = []
+        episode.user_data["num_shots"] = []
+        episode.user_data["sustainability"] = []
 
     def on_episode_step(
         self,
@@ -190,10 +230,23 @@ class CPRCallbacks(DefaultCallbacks):
         env_index: Optional[int] = None,
         **kwargs,
     ) -> None:
+        num_shots = {}
+        rewards = {}
         for agent_id, _ in base_env.get_unwrapped()[0].game.agents.items():
-            action = episode.last_action_for(agent_id)
-            if action == SHOOT:
-                episode.custom_metrics["num_shots"] += 1
+            num_shots[agent_id] = episode.last_action_for(agent_id) == SHOOT
+            rewards[agent_id] = episode.prev_reward_for(agent_id)
+        reputations = base_env.get_unwrapped()[0].game.reputation
+        episode.user_data["rewards"].append(rewards)
+        episode.user_data["rewards_gini"].append(gini_coef(rewards))
+        episode.user_data["reputations"].append(reputations)
+        episode.user_data["reputations_gini"].append(gini_coef(reputations))
+        episode.user_data["num_shots"].append(num_shots)
+        sus_metric = sustainability_metric(
+            base_env.get_unwrapped()[0].game.sustainability_metric
+        )
+        episode.user_data["sustainability"].append(
+            sus_metric(episode.user_data["rewards"])
+        )
 
     def on_episode_end(
         self,
@@ -205,17 +258,45 @@ class CPRCallbacks(DefaultCallbacks):
         env_index: Optional[int] = None,
         **kwargs,
     ) -> None:
-        episode.custom_metrics["gini"] = gini(episode.agent_rewards.values())
-        print(
-            " - ".join((
-                f"{episode.custom_metrics['num_shots']} shots",
-                f"{episode.custom_metrics['gini']} gini",
-            ))
+        # custom metrics get saved to the logfile
+        episode.custom_metrics["rewards"] = (
+            sum(
+                [
+                    sum(list(rewards.values()))
+                    for rewards in episode.user_data["rewards"]
+                ]
+            )
+            / episode.length
         )
+        episode.custom_metrics["rewards_gini"] = episode.user_data["rewards_gini"][-1]
+        episode.custom_metrics["reputations"] = (
+            sum(
+                [
+                    sum(list(reputations.values()))
+                    for reputations in episode.user_data["reputations"]
+                ]
+            )
+            / episode.length
+        )
+        episode.custom_metrics["reputations_gini"] = episode.user_data[
+            "reputations_gini"
+        ][-1]
+        episode.custom_metrics["num_shots"] = (
+            sum(
+                [
+                    sum(list(num_shots.values()))
+                    for num_shots in episode.user_data["num_shots"]
+                ]
+            )
+            / episode.length
+        )
+        episode.custom_metrics["sustainability"] = episode.user_data["sustainability"][
+            -1
+        ]
 
 
 class ArgParser(BaseParser):
-    checkpoint: Optional[int]
+    checkpoint: Optional[int]  # TODO add to config ini file?
     ini: Optional[str] = "default_small"
     # wandb_token: Optional[str]  # TODO: add this somehow at some point?
 

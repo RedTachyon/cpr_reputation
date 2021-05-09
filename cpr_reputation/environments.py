@@ -10,7 +10,6 @@ class HarvestEnv(RayMultiAgentEnv):
     def __init__(self, config: Dict[str, str], **kwargs):
         super().__init__()
         self.config = config
-        self.time = 0
         self.game = HarvestGame(**kwargs)
 
     def reset(self) -> Dict[str, np.ndarray]:
