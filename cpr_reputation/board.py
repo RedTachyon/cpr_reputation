@@ -1,7 +1,16 @@
 from __future__ import annotations
 
-from cpr_reputation.utils import sigmoid, GO_FORWARD, GO_BACKWARD, GO_LEFT, \
-    GO_RIGHT, ROT_LEFT, ROT_RIGHT, SHOOT, NOOP
+from cpr_reputation.utils import (
+    sigmoid,
+    GO_FORWARD,
+    GO_BACKWARD,
+    GO_LEFT,
+    GO_RIGHT,
+    ROT_LEFT,
+    ROT_RIGHT,
+    SHOOT,
+    NOOP,
+)
 
 from collections import namedtuple
 from dataclasses import dataclass
@@ -316,9 +325,9 @@ class HarvestGame:
         beam_width: int = 5,
         beam_dist: int = 10,
         num_crosses: int = 10,  # number of apple-crosses to start with
-        apple_values_method = None,  # reputation adjustment after gathering apple
-        tagging_values_method = None,  # reputation adjustment after tagging
-        sustainability_metric = None,  # how to calculate sustainability score
+        apple_values_method=None,  # reputation adjustment after gathering apple
+        tagging_values_method=None,  # reputation adjustment after tagging
+        sustainability_metric=None,  # how to calculate sustainability score
     ):
 
         self.num_agents = num_agents
@@ -458,7 +467,7 @@ class HarvestGame:
                 _agent.frozen = 25
                 reputations = {
                     "predator_reputation": self.reputation[agent_id],
-                    "prey_reputation": self.reputation[_agent_id]
+                    "prey_reputation": self.reputation[_agent_id],
                 }
                 self.reputation[agent_id] += tagging_values(
                     self.tagging_values_method, **reputations

@@ -195,7 +195,6 @@ def get_config(
 
 
 class CPRCallbacks(DefaultCallbacks):
-
     def __init__(self):
         super().__init__()
 
@@ -236,8 +235,12 @@ class CPRCallbacks(DefaultCallbacks):
         episode.user_data["reputations"].append(reputations)
         episode.user_data["reputations_gini"].append(gini_coef(reputations))
         episode.user_data["num_shots"].append(num_shots)
-        sus_metric = sustainability_metric(base_env.get_unwrapped()[0].game.sustainability_metric)
-        episode.user_data["sustainability"].append(sus_metric(episode.user_data["rewards"]))
+        sus_metric = sustainability_metric(
+            base_env.get_unwrapped()[0].game.sustainability_metric
+        )
+        episode.user_data["sustainability"].append(
+            sus_metric(episode.user_data["rewards"])
+        )
 
     def on_episode_end(
         self,
@@ -250,18 +253,40 @@ class CPRCallbacks(DefaultCallbacks):
         **kwargs,
     ) -> None:
         # custom metrics get saved to the logfile
-        episode.custom_metrics["rewards"] = sum(
-            [sum(list(rewards.values())) for rewards in episode.user_data["rewards"]]
-        ) / episode.length
+        episode.custom_metrics["rewards"] = (
+            sum(
+                [
+                    sum(list(rewards.values()))
+                    for rewards in episode.user_data["rewards"]
+                ]
+            )
+            / episode.length
+        )
         episode.custom_metrics["rewards_gini"] = episode.user_data["rewards_gini"][-1]
-        episode.custom_metrics["reputations"] = sum(
-            [sum(list(reputations.values())) for reputations in episode.user_data["reputations"]]
-        ) / episode.length
-        episode.custom_metrics["reputations_gini"] = episode.user_data["reputations_gini"][-1]
-        episode.custom_metrics["num_shots"] = sum(
-            [sum(list(num_shots.values())) for num_shots in episode.user_data["num_shots"]]
-        ) / episode.length
-        episode.custom_metrics["sustainability"] = episode.user_data["sustainability"][-1]
+        episode.custom_metrics["reputations"] = (
+            sum(
+                [
+                    sum(list(reputations.values()))
+                    for reputations in episode.user_data["reputations"]
+                ]
+            )
+            / episode.length
+        )
+        episode.custom_metrics["reputations_gini"] = episode.user_data[
+            "reputations_gini"
+        ][-1]
+        episode.custom_metrics["num_shots"] = (
+            sum(
+                [
+                    sum(list(num_shots.values()))
+                    for num_shots in episode.user_data["num_shots"]
+                ]
+            )
+            / episode.length
+        )
+        episode.custom_metrics["sustainability"] = episode.user_data["sustainability"][
+            -1
+        ]
 
 
 class ArgParser(BaseParser):
