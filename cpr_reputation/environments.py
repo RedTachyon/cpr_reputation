@@ -12,7 +12,6 @@ class HarvestEnv(RayMultiAgentEnv):
         self.config = config
         self.time = 0
         self.game = HarvestGame(**kwargs)
-        # self.original_board = np.copy(self.game.board)
 
     def reset(self) -> Dict[str, np.ndarray]:
         self.game.reset()
@@ -23,12 +22,6 @@ class HarvestEnv(RayMultiAgentEnv):
         }
 
     def step(self, actions: Dict[str, int]):
-        # process actions and rewards
-        # if self.game.time < 50:
-        #     actions = {
-        #         agent_id: NOOP if action == SHOOT else action
-        #         for (agent_id, action) in actions.items()
-        #     }
 
         rewards = self.game.step(actions)
 

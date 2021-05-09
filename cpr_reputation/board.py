@@ -465,7 +465,7 @@ class HarvestGame:
 
     def step(self, actions: Dict[str, int]) -> Dict[str, float]:
         """Process actions and return rewards."""
-        rewards = {agent_id: 0.0 for agent_id in self.agents}
+        rewards = {agent_id: 0.0 for agent_id in self.agents.keys()}
         action_pairs = list(actions.items())
         random.shuffle(action_pairs)
         for agent_id, action in action_pairs:

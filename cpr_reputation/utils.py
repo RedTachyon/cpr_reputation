@@ -1,8 +1,9 @@
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Sequence
 from configparser import ConfigParser
 from pathlib import Path
 from copy import deepcopy
+from itertools import product
 
 from ray.rllib import RolloutWorker, BaseEnv, Policy
 from ray.rllib.agents.callbacks import DefaultCallbacks
@@ -161,6 +162,11 @@ def get_config(
     return env_config, ray_config, heterogenous
 
 
+def gini(rewards: Sequence[float]) -> float:
+    """https://en.wikipedia.org/wiki/Gini_coefficient#Calculation"""
+    return 1 - sum(sum(abs(ri - rk) for ri, rk in product(rewards, rewards))) / 2 / len(rewards) / sum(rewards)
+
+
 class CPRCallbacks(DefaultCallbacks):
     def on_episode_start(
         self,
@@ -173,6 +179,7 @@ class CPRCallbacks(DefaultCallbacks):
         **kwargs,
     ) -> None:
         episode.custom_metrics["num_shots"] = 0
+        episode.custom_metrics["gini"] = 0
 
     def on_episode_step(
         self,
@@ -198,7 +205,13 @@ class CPRCallbacks(DefaultCallbacks):
         env_index: Optional[int] = None,
         **kwargs,
     ) -> None:
-        print(f"{episode.custom_metrics['num_shots']} shots")
+        episode.custom_metrics["gini"] = gini(episode.agent_rewards.values())
+        print(
+            " - ".join((
+                f"{episode.custom_metrics['num_shots']} shots",
+                f"{episode.custom_metrics['gini']} gini",
+            ))
+        )
 
 
 class ArgParser(BaseParser):

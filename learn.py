@@ -35,7 +35,7 @@ if __name__ == "__main__":
         print("Not pulling from a checkpoint")
         checkpoint = 1
 
-    for iteration in range(checkpoint, 200):
+    for iteration in range(checkpoint, 1000):
         result_dict = trainer.train()
 
         print(iteration, result_dict)
