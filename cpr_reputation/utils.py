@@ -251,7 +251,9 @@ class CPRCallbacks(DefaultCallbacks):
             episode.user_data["rewards_dict"][agent_id] += rewards[agent_id]
         reputations = base_env.get_unwrapped()[0].game.reputation
         episode.user_data["rewards"].append(rewards)
-        episode.user_data["rewards_gini"].append(gini_coef(episode.user_data["rewards_dict"]))
+        episode.user_data["rewards_gini"].append(
+            gini_coef(episode.user_data["rewards_dict"])
+        )
         episode.user_data["reputations"].append(reputations)
         episode.user_data["reputations_gini"].append(gini_coef(reputations))
         episode.user_data["num_shots"].append(num_shots)
