@@ -29,7 +29,7 @@ class HarvestRecorder(HarvestEnv):
         checkpoint_no: int = 1,
         checkpoints_superdir: str = "ckpnts",
         ini: str = ini,
-        heterogenous: bool = run_config["heterogenous"],
+        heterogenous: bool = run_config["heterogeneous"],
         **kwargs,
     ):
         super().__init__(config, **kwargs)

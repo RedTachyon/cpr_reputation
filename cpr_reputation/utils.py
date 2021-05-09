@@ -1,9 +1,10 @@
 import os
-from typing import Any, Dict, List, Optional, Tuple, Sequence
+from typing import Any, Dict, List, Optional, Tuple  # Sequence
 from configparser import ConfigParser
 from pathlib import Path
 from copy import deepcopy
-from itertools import product
+
+# from itertools import product
 
 from ray.rllib import RolloutWorker, BaseEnv, Policy
 from ray.rllib.agents.callbacks import DefaultCallbacks
@@ -295,6 +296,11 @@ class CPRCallbacks(DefaultCallbacks):
         episode.custom_metrics["sustainability"] = episode.user_data["sustainability"][
             -1
         ]
+        print(
+            " - ".join(
+                f"{key}={value}" for key, value in episode.custom_metrics.items()
+            )
+        )
 
 
 class ArgParser(BaseParser):

@@ -282,8 +282,8 @@ def apple_values_subtractive(
 
 
 def apple_values(method: str, board: Board, **kwargs) -> Union[float, int]:
-    """dispatch"""
-    if method is None:
+    """dispatch - defaults to 0 if method is none """
+    if method is None or method == "None":
         return 0.0
     if method == "subtractive":
         return apple_values_subtractive(board, **kwargs)
@@ -300,7 +300,7 @@ def tagging_values_simple_linear(
 
 def tagging_values(method: str, **kwargs) -> Union[float, int]:
     """dispatch - if initialized to defaults then 0"""
-    if method is None:
+    if method is None or method == "None":
         return 0.0
     if method == "simple_linear":
         return tagging_values_simple_linear(**kwargs)
