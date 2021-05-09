@@ -38,6 +38,6 @@ if __name__ == "__main__":
         result_dict = trainer.train()
 
         if run_config["verbose"]:
-            print(iteration, result_dict)
+            print(f"Iteration: {iteration}", end="\t")  # , result_dict)
         if iteration % 10 == 0:
             trainer.save(f"ckpnts/{args.ini}")
