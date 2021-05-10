@@ -111,7 +111,6 @@ class HarvestRecorder(HarvestEnv):
 if __name__ == "__main__":
 
     ray.init()
-
     register_env("CPRHarvestEnv-v0", lambda config: HarvestEnv(config, **env_config))
 
     trainer = ppo.PPOTrainer(
@@ -125,14 +124,3 @@ if __name__ == "__main__":
     recorder = HarvestRecorder(ray_config, trainer, checkpoint_no, **env_config)
 
     recorder.record()
-
-
-"""
-TODO
-
-- try `%run record_video_ray.py` with geneity="hom"
-    + debug `trainer.compute_action`
-- try training again with DQN
-- parse args for geneity, checkpoint_no
-- msg AK/QD
-"""

@@ -282,7 +282,7 @@ def apple_values_subtractive(
 
 
 def apple_values(method: str, board: Board, **kwargs) -> Union[float, int]:
-    """dispatch - defaults to 0 if method is none """
+    """dispatch - defaults to 0 if method is none"""
     if method is None or method == "None":
         return 0.0
     if method == "subtractive":

@@ -47,11 +47,21 @@ def gini_coef(d: Dict[str, float]) -> float:
     return gini(list(d.values()))
 
 
-# fraction of agent-timesteps with nonzero reward
+# average timestep with nonzero agent reward
 def sustainability_metric_deepmind(rewards: List[Dict[str, float]]):
-    total_rewards = [list(r.values()) for r in rewards]
-    zero_rewards = sum([rewards.count(0) for rewards in total_rewards])
-    return (len(total_rewards) - zero_rewards) / len(total_rewards)
+    num_agents = len(rewards[0])
+    total_rewards = [
+        list(r.values()) for r in rewards
+    ]  # list of (list of rewards per agent) per episode
+    nonzero_rewards = [
+        num_agents - r.count(0) for r in total_rewards
+    ]  # how many agents had nonzero rewards per episode
+    if sum(nonzero_rewards) == 0:
+        return len(total_rewards)
+    episode_weighted_nonzero_rewards = [
+        timestep * nonzero_rewards[timestep] for timestep in range(len(total_rewards))
+    ]
+    return sum(episode_weighted_nonzero_rewards) / sum(nonzero_rewards)
 
 
 def sustainability_metric(method: str):
