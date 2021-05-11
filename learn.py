@@ -8,6 +8,7 @@ import numpy as np
 import ray
 from gym.spaces import Box, Discrete
 from ray.rllib.agents import ppo
+from ray.tune import tune
 from ray.tune.logger import UnifiedLogger
 from ray.tune.registry import register_env
 
@@ -40,6 +41,8 @@ class ArgParser(BaseParser):
 if __name__ == "__main__":
 
     cuda = torch.cuda.is_available()
+    register_env("CPRHarvestEnv-v0", lambda config: HarvestEnv(config))
+
 
     ray.init()
 
@@ -48,7 +51,7 @@ if __name__ == "__main__":
     # Load the configs
 
     with open(args.config, "r") as f:
-        config = yaml.load(f.read())
+        config = yaml.load(f.read(), Loader=yaml.Loader)
 
     env_config = config["env_config"]
     ray_config = config["ray_config"]
@@ -56,7 +59,6 @@ if __name__ == "__main__":
 
     config["num_gpus"] = 1 if cuda else 0
 
-    register_env("CPRHarvestEnv-v0", lambda config: HarvestEnv(env_config))
 
     # Fill out the rest of the ray config
     walker_policy = (
@@ -95,13 +97,19 @@ if __name__ == "__main__":
     }
 
     ray_config["callbacks"] = CPRCallbacks
+    ray_config["env"] = "CPRHarvestEnv-v0"
+    ray_config["env_config"] = env_config
 
-    trainer = ppo.PPOTrainer(env="CPRHarvestEnv-v0", config=ray_config)
+    results = tune.run("PPO", config=ray_config)
 
-    for iteration in range(args.iters):
-        result_dict = trainer.train()
+    ray.shutdown()
 
-        if run_config["verbose"]:
-            print(f"Iteration: {iteration}", end="\t")  # , result_dict)
-        if iteration % 10 == 0:
-            trainer.save(f"ckpnts/{args.name}")
+    # trainer = ppo.PPOTrainer(env="CPRHarvestEnv-v0", config=ray_config)
+    #
+    # for iteration in range(args.iters):
+    #     result_dict = trainer.train()
+    #
+    #     if run_config["verbose"]:
+    #         print(f"Iteration: {iteration}", end="\t")  # , result_dict)
+    #     if iteration % 10 == 0:
+    #         trainer.save(f"ckpnts/{args.name}")
