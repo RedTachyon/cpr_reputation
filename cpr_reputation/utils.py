@@ -169,6 +169,11 @@ def get_config(
         "train_batch_size": ini_parser.getint("RayConfig", "train_batch_size"),
         "sgd_minibatch_size": ini_parser.getint("RayConfig", "sgd_minibatch_size"),
         "num_sgd_iter": ini_parser.getint("RayConfig", "num_sgd_iter"),
+        "lambda": ini_parser.getfloat("RayConfig", "lambda"),
+        "kl_coef": ini_parser.getfloat("RayConfig", "kl_coef"),
+        "lr": ini_parser.getfloat("RayConfig", "lr"),
+        "vf_loss_coef": ini_parser.getfloat("RayConfig", "vf_loss_coef"),
+        "gamma": ini_parser.getfloat("RayConfig", "gamma"),
         "callbacks": eval(ini_parser.get("RayConfig", "callbacks")),  # class name
     }
 
