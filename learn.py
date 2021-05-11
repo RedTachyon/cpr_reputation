@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
+import os
 from copy import deepcopy
 from typing import Optional
 
-import torch
 import numpy as np
 
 import ray
@@ -40,9 +40,7 @@ class ArgParser(BaseParser):
 
 if __name__ == "__main__":
 
-    cuda = torch.cuda.is_available()
-    register_env("CPRHarvestEnv-v0", lambda config: HarvestEnv(config))
-
+    register_env("CPRHarvestEnv-v0", lambda cfg: HarvestEnv(cfg))
 
     ray.init()
 
@@ -57,7 +55,7 @@ if __name__ == "__main__":
     ray_config = config["ray_config"]
     run_config = config["run_config"]
 
-    ray_config["num_gpus"] = 1 if cuda else 0
+    ray_config["num_gpus"] = int(os.environ.get("RLLIB_NUM_GPUS", "0"))
 
 
     # Fill out the rest of the ray config
