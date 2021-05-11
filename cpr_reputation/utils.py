@@ -149,6 +149,8 @@ def get_config(
     ini_file = base / ini
     ini_parser = ConfigParser()
     ini_parser.read(ini_file)
+    if not ini_parser.has_section("EnvConfig"):
+        print(f"bad config: {BASE_PATH}/{ini}")
 
     env_config = {
         "num_agents": ini_parser.getint("EnvConfig", "num_agents"),
