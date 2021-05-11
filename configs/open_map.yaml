@@ -18,7 +18,6 @@ ray_config:
   lr: 1.0e-5
   vf_loss_coeff: 1.0e-2
   gamma: 0.99
-  callbacks: CPRCallbacks
 run_config:
   heterogeneous: true
   verbose: true

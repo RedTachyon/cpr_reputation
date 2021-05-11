@@ -57,7 +57,7 @@ if __name__ == "__main__":
     ray_config = config["ray_config"]
     run_config = config["run_config"]
 
-    config["num_gpus"] = 1 if cuda else 0
+    ray_config["num_gpus"] = 1 if cuda else 0
 
 
     # Fill out the rest of the ray config
