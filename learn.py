@@ -46,6 +46,8 @@ if __name__ == "__main__":
 
     args = ArgParser()
 
+    iters = args.iters
+
     # Load the configs
 
     with open(args.config, "r") as f:
@@ -98,7 +100,7 @@ if __name__ == "__main__":
     ray_config["env"] = "CPRHarvestEnv-v0"
     ray_config["env_config"] = env_config
 
-    results = tune.run("PPO", config=ray_config)
+    results = tune.run("PPO", config=ray_config, stop={"training_iteration": iters})
 
     ray.shutdown()
 

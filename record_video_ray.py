@@ -14,12 +14,6 @@ from matplotlib import animation
 
 cmap = mpl.colors.ListedColormap(["brown", "green", "blue", "grey", "red"])
 
-args = ArgParser()
-env_config, ray_config, run_config = get_config(args.ini)
-ini = args.ini
-if ini[-4:] == ".ini":
-    ini = ini[:-4]
-
 
 class HarvestRecorder(HarvestEnv):
     def __init__(
@@ -110,6 +104,16 @@ class HarvestRecorder(HarvestEnv):
 
 if __name__ == "__main__":
 
+    args = ArgParser()
+
+    with open(args.config, "r") as f:
+        config = yaml.load(f.read(), Loader=yaml.Loader)
+    env_config = config["env_config"]
+    ray_config = config["ray_config"]
+    run_config = config["run_config"]
+
+    checkpoint = args.checkpoint
+
     ray.init()
     register_env("CPRHarvestEnv-v0", lambda config: HarvestEnv(config, **env_config))
 
@@ -119,8 +123,6 @@ if __name__ == "__main__":
         config=ray_config,
     )
 
-    checkpoint_no = args.checkpoint
-
-    recorder = HarvestRecorder(ray_config, trainer, checkpoint_no, **env_config)
+    recorder = HarvestRecorder(ray_config, trainer, checkpoint, **env_config)
 
     recorder.record()
