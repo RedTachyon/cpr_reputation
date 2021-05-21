@@ -24,17 +24,21 @@ class ArgParser(BaseParser):
     name: str
     config: str
     iters: int
+    checkpoint_freq: int = 10
 
     _abbrev = {
         "name": "n",
         "config": "c",
         "iters": "i",
+        "checkpoint_freq": "f",
     }
 
     _help = {
         "name": "Name of the run for checkpoints",
         "config": "Path to the config of the experiment",
         "iters": "Number of training iterations",
+        "checkpoint_freq": "How many training iterations between checkpoints. "
+                           "A value of 0 (default) disables checkpointing.",
     }
 
 
@@ -47,6 +51,7 @@ if __name__ == "__main__":
     args = ArgParser()
 
     iters = args.iters
+    checkpoint_freq = args.checkpoint_freq
 
     # Load the configs
 
@@ -59,13 +64,12 @@ if __name__ == "__main__":
 
     ray_config["num_gpus"] = int(os.environ.get("RLLIB_NUM_GPUS", "0"))
 
-
     # Fill out the rest of the ray config
     walker_policy = (
         None,
         Box(
-            0.,
-            1.,
+            0.0,
+            1.0,
             (env_config["sight_dist"], 2 * env_config["sight_width"] + 1, 4),
             np.float32,
         ),  # obs
@@ -100,7 +104,12 @@ if __name__ == "__main__":
     ray_config["env"] = "CPRHarvestEnv-v0"
     ray_config["env_config"] = env_config
 
-    results = tune.run("PPO", config=ray_config, stop={"training_iteration": iters})
+    results = tune.run(
+        "PPO",
+        config=ray_config,
+        stop={"training_iteration": iters},
+        checkpoint_freq=checkpoint_freq,
+    )
 
     ray.shutdown()
 
