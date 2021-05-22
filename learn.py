@@ -21,16 +21,18 @@ from typarse import BaseParser
 
 
 class ArgParser(BaseParser):
-    name: str
     config: str
-    iters: int
+    name: str = "run_name"
+    iters: int = 1
     checkpoint_freq: int = 10
+    checkpoint_path: str = None
 
     _abbrev = {
         "name": "n",
         "config": "c",
         "iters": "i",
         "checkpoint_freq": "f",
+        "checkpoint_path": "p",
     }
 
     _help = {
@@ -38,29 +40,23 @@ class ArgParser(BaseParser):
         "config": "Path to the config of the experiment",
         "iters": "Number of training iterations",
         "checkpoint_freq": "How many training iterations between checkpoints. "
-                           "A value of 0 (default) disables checkpointing.",
+        "A value of 0 (default) disables checkpointing.",
+        "checkpoint_path": "Which checkpoint to load, if any",
     }
 
 
 if __name__ == "__main__":
 
-    register_env("CPRHarvestEnv-v0", lambda cfg: HarvestEnv(cfg))
-
-    ray.init()
-
     args = ArgParser()
-
-    iters = args.iters
-    checkpoint_freq = args.checkpoint_freq
-
-    # Load the configs
-
     with open(args.config, "r") as f:
         config = yaml.load(f.read(), Loader=yaml.Loader)
-
     env_config = config["env_config"]
     ray_config = config["ray_config"]
     run_config = config["run_config"]
+
+    register_env(
+        "CPRHarvestEnv-v0", lambda ray_config: HarvestEnv(env_config, ray_config)
+    )
 
     ray_config["num_gpus"] = int(os.environ.get("RLLIB_NUM_GPUS", "0"))
 
@@ -104,11 +100,23 @@ if __name__ == "__main__":
     ray_config["env"] = "CPRHarvestEnv-v0"
     ray_config["env_config"] = env_config
 
+    name = args.name
+    iters = args.iters
+    checkpoint_freq = args.checkpoint_freq
+    if args.checkpoint_path:
+        checkpoint_path = os.path.expanduser(args.checkpoint_path)
+        print(f"loading checkpoint {checkpoint_path}")
+    else:
+        checkpoint_path = None
+
+    ray.init()
     results = tune.run(
         "PPO",
+        name=name,
         config=ray_config,
         stop={"training_iteration": iters},
         checkpoint_freq=checkpoint_freq,
+        restore=checkpoint_path,
     )
 
     ray.shutdown()

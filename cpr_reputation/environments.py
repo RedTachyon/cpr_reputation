@@ -8,10 +8,10 @@ from cpr_reputation.board import HarvestGame
 
 
 class HarvestEnv(RayMultiAgentEnv):
-    def __init__(self, config: Dict[str, str]):
+    def __init__(self, env_config: Dict[str, str], ray_config: Dict[str, str]):
         super().__init__()
-        self.config = config
-        self.game = HarvestGame(**config)
+        self.config = ray_config
+        self.game = HarvestGame(**env_config)
 
         self.observation_space = Box(
             0,
@@ -23,7 +23,6 @@ class HarvestEnv(RayMultiAgentEnv):
         self.action_space = Discrete(8)
 
         self.original_board = np.array([], dtype=np.float32)
-
 
     def reset(self) -> Dict[str, np.ndarray]:
         self.game.reset()
