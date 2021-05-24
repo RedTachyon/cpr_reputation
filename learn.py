@@ -28,6 +28,7 @@ class ArgParser(BaseParser):
     iters: int = 1
     checkpoint_freq: int = 10
     checkpoint_path: str = None
+    wandb_project: str = "quinn-workspace"
 
     _abbrev = {
         "name": "n",
@@ -35,6 +36,7 @@ class ArgParser(BaseParser):
         "iters": "i",
         "checkpoint_freq": "f",
         "checkpoint_path": "p",
+        "wandb_project": "w",
     }
 
     _help = {
@@ -44,6 +46,7 @@ class ArgParser(BaseParser):
         "checkpoint_freq": "How many training iterations between checkpoints. "
         "A value of 0 (default) disables checkpointing.",
         "checkpoint_path": "Which checkpoint to load, if any",
+        "wandb_project": "What project name in wandb?"
     }
 
 
@@ -122,7 +125,7 @@ if __name__ == "__main__":
         restore=checkpoint_path,
         callbacks=[
             WandbLoggerCallback(
-                project=run_config["wandb_project"],
+                project=args.wandb_project,
                 api_key_file=run_config["wandb_key_file"],
                 monitor_gym=True,
                 entity="marl-cpr"
