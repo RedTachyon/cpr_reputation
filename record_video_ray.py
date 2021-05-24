@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os
+# import os
 from copy import deepcopy
 import numpy as np
 import yaml

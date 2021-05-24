@@ -318,7 +318,7 @@ def test_agent_initial_position():
 
 def test_apples_do_not_disappear_on_step():
     np.random.seed(1)  # this test is sensitive to randomness
-    env = HarvestEnv(config={}, num_agents=1, size=(20, 20))
+    env = HarvestEnv(env_config={"num_agents": 1, "size": (20, 20)}, ray_config=dict())
     env.reset()
     board = deepcopy(env.game.board)
     for step in range(100):
@@ -333,7 +333,12 @@ def test_apples_do_not_disappear_on_step():
 def test_regenerate_apples_with_step():
     np.random.seed(0)
     env = HarvestEnv(
-        config={}, num_agents=18, size=(20, 20), apple_values_method="subtractive"
+        env_config={
+            "num_agents": 18,
+            "size": (20, 20),
+            "apple_values_method": "subtractive",
+        },
+        ray_config=dict(),
     )
     env.reset()
 
