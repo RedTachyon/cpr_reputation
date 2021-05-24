@@ -5,7 +5,6 @@ from copy import deepcopy
 # from typing import Optional
 
 import numpy as np
-
 import ray
 from gym.spaces import Box, Discrete
 
@@ -13,14 +12,14 @@ from gym.spaces import Box, Discrete
 from ray.tune import tune
 
 # from ray.tune.logger import UnifiedLogger
+from ray.tune.integration.wandb import WandbLoggerCallback
 from ray.tune.registry import register_env
-
 import yaml
+from typarse import BaseParser
+# import wandb
 
 from cpr_reputation.environments import HarvestEnv
 from cpr_reputation.metrics import CPRCallbacks
-
-from typarse import BaseParser
 
 
 class ArgParser(BaseParser):
@@ -102,13 +101,14 @@ if __name__ == "__main__":
     ray_config["callbacks"] = CPRCallbacks
     ray_config["env"] = "CPRHarvestEnv-v0"
     ray_config["env_config"] = env_config
+    # ray_config["wandb"] = {"project": "quinn-workspace", "api_key_file": "WANDB_TOKEN", "monitor_gym": True}
 
     name = args.name
     iters = args.iters
     checkpoint_freq = args.checkpoint_freq
     if args.checkpoint_path:
         checkpoint_path = os.path.expanduser(args.checkpoint_path)
-        print(f"loading checkpoint {checkpoint_path}")
+        print(f"Will load checkpoint {checkpoint_path}")
     else:
         checkpoint_path = None
 
@@ -120,6 +120,13 @@ if __name__ == "__main__":
         stop={"training_iteration": iters},
         checkpoint_freq=checkpoint_freq,
         restore=checkpoint_path,
+        callbacks=[
+            WandbLoggerCallback(
+                project=run_config["wandb_project"],
+                api_key_file=run_config["wandb_key_file"],
+                monitor_gym=True,
+            )
+        ],
     )
 
     ray.shutdown()

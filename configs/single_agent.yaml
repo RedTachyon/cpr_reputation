@@ -22,3 +22,5 @@ ray_config:
 run_config:
   heterogeneous: true
   verbose: true
+  wandb_key_file: WANDB_TOKEN
+  wandb_project: quinn-workspace
