@@ -125,6 +125,7 @@ if __name__ == "__main__":
                 project=run_config["wandb_project"],
                 api_key_file=run_config["wandb_key_file"],
                 monitor_gym=True,
+                entity="marl-cpr"
             )
         ],
     )
