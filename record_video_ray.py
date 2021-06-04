@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-
-from cpr_reputation.board import Position, SHOOT, in_bounds
-from cpr_reputation.environments import HarvestEnv
-from cpr_reputation.utils import get_config, ArgParser
+# import os
+from copy import deepcopy
+import numpy as np
+import yaml
 
 import ray
 from ray.tune.registry import register_env
@@ -11,56 +11,49 @@ from ray.rllib.agents import ppo
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import animation
+from gym.spaces import Box, Discrete
+
+from cpr_reputation.board import Position, SHOOT, in_bounds
+from cpr_reputation.environments import HarvestEnv
+from learn import ArgParser
 
 cmap = mpl.colors.ListedColormap(["brown", "green", "blue", "grey", "red"])
-
-args = ArgParser()
-env_config, ray_config, run_config = get_config(args.ini)
-ini = args.ini
-if ini[-4:] == ".ini":
-    ini = ini[:-4]
 
 
 class HarvestRecorder(HarvestEnv):
     def __init__(
         self,
-        config: dict,
         trainer,
-        checkpoint_no: int = 1,
-        checkpoints_superdir: str = "ckpnts",
-        ini: str = ini,
-        heterogenous: bool = run_config["heterogeneous"],
-        **kwargs,
+        env_config: dict,
+        ray_config: dict,
+        heterogeneous: bool,
+        checkpoint_path: str = None,
     ):
-        super().__init__(config, **kwargs)
-        self.checkpoints_superdir = checkpoints_superdir
-        self.checkpoint_no = checkpoint_no
-        self.ini = ini
-        self.heterogenous = heterogenous
+        super().__init__(env_config, ray_config)
+
         self.trainer = trainer
+        self.heterogeneous = heterogeneous
+
         try:
-            trainer.restore(
-                f"{self.checkpoints_superdir}/{self.ini}/checkpoint_{checkpoint_no}/checkpoint-{checkpoint_no}"
-            )
-            print(f"Loaded in checkpoint {checkpoint_no}")
+            trainer.restore(checkpoint_path)
+            print(f"Loaded in checkpoint {checkpoint_path}")
         except AssertionError:
             print(
-                f"Not loading any checkpoint at all, tried checkpoint {checkpoint_no}"
+                f"Not loading any checkpoint at all, tried checkpoint {checkpoint_path}"
             )
 
     def record(self, filename: str = None):
-        """Records a video of the loaded checkpoint.
+        """Records a video of the loaded checkpoint."""
 
-        WARNING: is only really compatible with homogeneous training."""
         if filename is None:
-            filename = f"harvest-anim-{self.ini}-{self.checkpoint_no}.mp4"
+            filename = checkpoint_path + ".mp4"
         fig, ax = plt.subplots()
 
         images = list()
         done = {"__all__": False}
         while not done["__all__"]:
             actions = dict()
-            if self.heterogenous:
+            if self.heterogeneous:
                 for agent_id, _ in self.game.agents.items():
                     actions[agent_id] = self.trainer.compute_action(
                         observation=self.game.get_agent_obs(agent_id),
@@ -110,8 +103,55 @@ class HarvestRecorder(HarvestEnv):
 
 if __name__ == "__main__":
 
+    args = ArgParser()
+
+    with open(args.config, "r") as f:
+        config = yaml.load(f.read(), Loader=yaml.Loader)
+    env_config = config["env_config"]
+    ray_config = config["ray_config"]
+    run_config = config["run_config"]
+
+    # copied from learn.py
+    walker_policy = (
+        None,
+        Box(
+            0.0,
+            1.0,
+            (env_config["sight_dist"], 2 * env_config["sight_width"] + 1, 4),
+            np.float32,
+        ),  # obs
+        Discrete(8),  # action
+        dict(),
+    )
+    if run_config["heterogeneous"]:
+        multiagent = {
+            "policies": {
+                f"Agent{k}": deepcopy(walker_policy)
+                for k in range(env_config["num_agents"])
+            },
+            "policy_mapping_fn": lambda agent_id: agent_id,
+        }
+    else:
+        multiagent = {
+            "policies": {"walker": walker_policy},
+            "policy_mapping_fn": lambda agent_id: "walker",
+        }
+
+    ray_config["multiagent"] = multiagent
+    ray_config["model"] = {
+        "dim": 3,
+        "conv_filters": [
+            [16, [4, 4], 1],
+            [32, [env_config["sight_dist"], 2 * env_config["sight_width"] + 1], 1],
+        ],
+    }
+
+    checkpoint_path = args.checkpoint_path
+
     ray.init()
-    register_env("CPRHarvestEnv-v0", lambda config: HarvestEnv(config, **env_config))
+    register_env(
+        "CPRHarvestEnv-v0", lambda ray_config: HarvestEnv(env_config, ray_config)
+    )
 
     trainer = ppo.PPOTrainer(
         env="CPRHarvestEnv-v0",
@@ -119,8 +159,8 @@ if __name__ == "__main__":
         config=ray_config,
     )
 
-    checkpoint_no = args.checkpoint
-
-    recorder = HarvestRecorder(ray_config, trainer, checkpoint_no, **env_config)
+    recorder = HarvestRecorder(
+        trainer, env_config, ray_config, run_config["heterogeneous"], checkpoint_path
+    )
 
     recorder.record()

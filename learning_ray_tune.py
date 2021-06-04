@@ -102,7 +102,7 @@ if args.train_fn_name is not None:
     train_fn.__name__ = args.train_fn_name
 
 if __name__ == "__main__":
-    register_env("harvest", lambda config: HarvestEnv(config, **defaults_ini))
+    register_env("harvest", lambda config: HarvestEnv(defaults_ini, dict()))
 
     ray.init()
 
