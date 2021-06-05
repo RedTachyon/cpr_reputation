@@ -14,7 +14,7 @@ from cpr_reputation.utils import (
 
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Tuple, List, Dict, Union
+from typing import Tuple, List, Dict, Union, Optional
 import random
 
 import numpy as np
@@ -329,9 +329,10 @@ class HarvestGame:
         beam_width: int = 5,
         beam_dist: int = 10,
         num_crosses: int = 10,  # number of apple-crosses to start with
-        apple_values_method=None,  # reputation adjustment after gathering apple
-        tagging_values_method=None,  # reputation adjustment after tagging
-        sustainability_metric=None,  # how to calculate sustainability score
+        ceasefire: int = 50,
+        apple_values_method: Optional[str] = None,  # reputation adjustment after gathering apple
+        tagging_values_method: Optional[str] = None,  # reputation adjustment after tagging
+        sustainability_metric: Optional[str] = None,  # how to calculate sustainability score
     ):
 
         self.num_agents = num_agents
@@ -341,6 +342,7 @@ class HarvestGame:
         self.beam_width = beam_width
         self.beam_dist = beam_dist
         self.num_crosses = num_crosses
+        self.ceasefire = ceasefire
 
         self.apple_values_method = apple_values_method
         self.tagging_values_method = tagging_values_method
@@ -464,7 +466,7 @@ class HarvestGame:
             self._rotate_agent(agent_id, 1)
         elif action == SHOOT:
             # Shoot a beam
-            if self.time < 50:
+            if self.time < self.ceasefire:
                 return 0.0
             affected_agents = self.get_affected_agents(agent_id)
             for (_agent_id, _agent) in affected_agents:
