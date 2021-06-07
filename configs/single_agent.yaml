@@ -5,6 +5,7 @@ env_config:
   sight_width: 5
   sight_dist: 10
   num_crosses: 9
+  ceasefire: 50
   apple_values_method:
   tagging_values_method:
   sustainability_metric: deepmind
