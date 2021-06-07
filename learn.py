@@ -104,6 +104,14 @@ if __name__ == "__main__":
     ray_config["callbacks"] = CPRCallbacks
     ray_config["env"] = "CPRHarvestEnv-v0"
     ray_config["env_config"] = env_config
+
+    ray_config["evaluation_interval"] = 100
+    ray_config["evaluation_num_workers"] = 1
+    ray_config["evaluation_config"] = {
+            "record_env": "videos",
+            "render_env": True,
+        }
+
     # ray_config["wandb"] = {"project": "quinn-workspace", "api_key_file": "WANDB_TOKEN", "monitor_gym": True}
 
     name = args.name
