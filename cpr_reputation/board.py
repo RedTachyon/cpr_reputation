@@ -20,6 +20,7 @@ import random
 import numpy as np
 from numba import vectorize
 from scipy.ndimage import convolve
+from scipy.stats import zscore
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -292,18 +293,26 @@ def apple_values(method: str, board: Board, **kwargs) -> Union[float, int]:
     raise ValueError(f"Improper apple value argument {method}")
 
 
+def tagging_values_z_score(reputations: Dict[str, float], prey_id: str) -> float:
+    agents = list(reputations.keys())
+    z_scores = zscore(np.array(list(reputations.values())))
+    return z_scores[agents.index(prey_id)]
+
+
 def tagging_values_simple_linear(
-    predator_reputation: float, prey_reputation: float, multiplier: float = -0.1
+    reputations: Dict[str, float], prey_id: str, multiplier: float = -0.1
 ) -> float:
-    return multiplier * prey_reputation
+    return multiplier * reputations[prey_id]
 
 
-def tagging_values(method: str, **kwargs) -> Union[float, int]:
+def tagging_values(method: str, reputations: Dict[str, float], prey_id) -> Union[float, int]:
     """dispatch - if initialized to defaults then 0"""
     if method is None or method == "None":
         return 0.0
     if method == "simple_linear":
-        return tagging_values_simple_linear(**kwargs)
+        return tagging_values_simple_linear(reputations, prey_id)
+    if method == "z_score":
+        return tagging_values_z_score(reputations)
     raise ValueError(f"Improper tagging value argument {method}")
 
 
@@ -471,12 +480,9 @@ class HarvestGame:
             affected_agents = self.get_affected_agents(agent_id)
             for (_agent_id, _agent) in affected_agents:
                 _agent.frozen = 25
-                reputations = {
-                    "predator_reputation": self.reputation[agent_id],
-                    "prey_reputation": self.reputation[_agent_id],
-                }
+                reputations = self.reputation
                 self.reputation[agent_id] += tagging_values(
-                    self.tagging_values_method, **reputations
+                    self.tagging_values_method, reputations, _agent_id
                 )
         elif action == NOOP:
             # No-op
