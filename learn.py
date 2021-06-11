@@ -138,7 +138,8 @@ if __name__ == "__main__":
         config=full_ray_config,
         stop={"training_iteration": iters},
         checkpoint_freq=checkpoint_freq,
-        # restore=checkpoint_path,
+
+        restore=checkpoint_path,
         # callbacks=[
         #     WandbLoggerCallback(
         #         project=args.wandb_project,
@@ -156,6 +157,7 @@ if __name__ == "__main__":
         env="CPRHarvestEnv-v0",
         logger_creator=lambda cfg: UnifiedLogger(cfg, "log"),
         config=full_ray_config,
+
     )
 
     recorder = HarvestRecorder(
