@@ -51,14 +51,14 @@ class CPRCallbacks(DefaultCallbacks):
         super().__init__()
 
     def on_episode_start(
-            self,
-            *,
-            worker: RolloutWorker,
-            base_env: BaseEnv,
-            policies: Dict[PolicyID, Policy],
-            episode: MultiAgentEpisode,
-            env_index: Optional[int] = None,
-            **kwargs,
+        self,
+        *,
+        worker: RolloutWorker,
+        base_env: BaseEnv,
+        policies: Dict[PolicyID, Policy],
+        episode: MultiAgentEpisode,
+        env_index: Optional[int] = None,
+        **kwargs,
     ) -> None:
         episode.user_data["rewards"] = list()
         episode.user_data["rewards_dict"] = defaultdict(float)
@@ -69,13 +69,13 @@ class CPRCallbacks(DefaultCallbacks):
         episode.user_data["sustainability"] = list()
 
     def on_episode_step(
-            self,
-            *,
-            worker: RolloutWorker,
-            base_env: BaseEnv,
-            episode: MultiAgentEpisode,
-            env_index: Optional[int] = None,
-            **kwargs,
+        self,
+        *,
+        worker: RolloutWorker,
+        base_env: BaseEnv,
+        episode: MultiAgentEpisode,
+        env_index: Optional[int] = None,
+        **kwargs,
     ) -> None:
         # TODO: refactor this
         num_shots = dict()
@@ -100,40 +100,47 @@ class CPRCallbacks(DefaultCallbacks):
         )
 
     def on_episode_end(
-            self,
-            *,
-            worker: RolloutWorker,
-            base_env: BaseEnv,
-            policies: Dict[PolicyID, Policy],
-            episode: MultiAgentEpisode,
-            env_index: Optional[int] = None,
-            **kwargs,
+        self,
+        *,
+        worker: RolloutWorker,
+        base_env: BaseEnv,
+        policies: Dict[PolicyID, Policy],
+        episode: MultiAgentEpisode,
+        env_index: Optional[int] = None,
+        **kwargs,
     ) -> None:
         # custom metrics get saved to the logfile
-        episode.custom_metrics["rewards"] = sum([sum(list(rewards.values()))for rewards in episode.user_data["rewards"]]
-        ) / episode.length
+        episode.custom_metrics["rewards"] = (
+            sum(
+                [
+                    sum(list(rewards.values()))
+                    for rewards in episode.user_data["rewards"]
+                ]
+            )
+            / episode.length
+        )
 
         episode.custom_metrics["rewards_gini"] = episode.user_data["rewards_gini"][-1]
         episode.custom_metrics["reputations"] = (
-                sum(
-                    [
-                        sum(list(reputations.values()))
-                        for reputations in episode.user_data["reputations"]
-                    ]
-                )
-                / episode.length
+            sum(
+                [
+                    sum(list(reputations.values()))
+                    for reputations in episode.user_data["reputations"]
+                ]
+            )
+            / episode.length
         )
         episode.custom_metrics["reputations_gini"] = episode.user_data[
             "reputations_gini"
         ][-1]
         episode.custom_metrics["num_shots"] = (
-                sum(
-                    [
-                        sum(list(num_shots.values()))
-                        for num_shots in episode.user_data["num_shots"]
-                    ]
-                )
-                / episode.length
+            sum(
+                [
+                    sum(list(num_shots.values()))
+                    for num_shots in episode.user_data["num_shots"]
+                ]
+            )
+            / episode.length
         )
         episode.custom_metrics["sustainability"] = episode.user_data["sustainability"][
             -1

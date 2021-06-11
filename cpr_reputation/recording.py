@@ -8,6 +8,7 @@ from cpr_reputation.utils import SHOOT
 
 cmap = mpl.colors.ListedColormap(["brown", "green", "blue", "grey", "red"])
 
+
 class HarvestRecorder(HarvestEnv):
     def __init__(
         self,
@@ -22,6 +23,8 @@ class HarvestRecorder(HarvestEnv):
         self.heterogeneous = heterogeneous
         self.checkpoint_path = checkpoint_path
 
+        self.video_path = None
+
         try:
             trainer.restore(checkpoint_path)
             print(f"Loaded in checkpoint {checkpoint_path}")
@@ -35,6 +38,8 @@ class HarvestRecorder(HarvestEnv):
 
         if filename is None:
             filename = self.checkpoint_path + ".mp4"
+
+        self.video_path = filename
         fig, ax = plt.subplots()
 
         images = list()
