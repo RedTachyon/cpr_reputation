@@ -314,7 +314,7 @@ def tagging_values(
     if method == "simple_linear":
         return tagging_values_simple_linear(reputations, prey_id)
     if method == "z_score":
-        return tagging_values_z_score(reputations)
+        return tagging_values_z_score(reputations, prey_id)
     raise ValueError(f"Improper tagging value argument {method}")
 
 
