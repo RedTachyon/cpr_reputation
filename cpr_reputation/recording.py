@@ -1,24 +1,12 @@
-#!/usr/bin/env python3
-# import os
-from copy import deepcopy
-import numpy as np
-import yaml
-
-import ray
-from ray.tune.registry import register_env
-from ray.tune.logger import UnifiedLogger
-from ray.rllib.agents import ppo
+from cpr_reputation.board import Position, in_bounds
+from cpr_reputation.environments import HarvestEnv
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import animation
-from gym.spaces import Box, Discrete
 
-from cpr_reputation.board import Position, SHOOT, in_bounds
-from cpr_reputation.environments import HarvestEnv
-from learn import ArgParser
+from cpr_reputation.utils import SHOOT
 
 cmap = mpl.colors.ListedColormap(["brown", "green", "blue", "grey", "red"])
-
 
 class HarvestRecorder(HarvestEnv):
     def __init__(
@@ -32,6 +20,7 @@ class HarvestRecorder(HarvestEnv):
 
         self.trainer = trainer
         self.heterogeneous = heterogeneous
+        self.checkpoint_path = checkpoint_path
 
         try:
             trainer.restore(checkpoint_path)
@@ -45,7 +34,7 @@ class HarvestRecorder(HarvestEnv):
         """Records a video of the loaded checkpoint."""
 
         if filename is None:
-            filename = checkpoint_path + ".mp4"
+            filename = self.checkpoint_path + ".mp4"
         fig, ax = plt.subplots()
 
         images = list()
@@ -98,68 +87,3 @@ class HarvestRecorder(HarvestEnv):
         )
         ani.save(filename)
         print(f"Successfully wrote {filename}")
-
-
-if __name__ == "__main__":
-
-    args = ArgParser()
-
-    with open(args.config, "r") as f:
-        config = yaml.load(f.read(), Loader=yaml.Loader)
-    env_config = config["env_config"]
-    ray_config = config["ray_config"]
-    run_config = config["run_config"]
-
-    # copied from learn.py
-    walker_policy = (
-        None,
-        Box(
-            0.0,
-            1.0,
-            (env_config["sight_dist"], 2 * env_config["sight_width"] + 1, 4),
-            np.float32,
-        ),  # obs
-        Discrete(8),  # action
-        dict(),
-    )
-    if run_config["heterogeneous"]:
-        multiagent = {
-            "policies": {
-                f"Agent{k}": deepcopy(walker_policy)
-                for k in range(env_config["num_agents"])
-            },
-            "policy_mapping_fn": lambda agent_id: agent_id,
-        }
-    else:
-        multiagent = {
-            "policies": {"walker": walker_policy},
-            "policy_mapping_fn": lambda agent_id: "walker",
-        }
-
-    ray_config["multiagent"] = multiagent
-    ray_config["model"] = {
-        "dim": 3,
-        "conv_filters": [
-            [16, [4, 4], 1],
-            [32, [env_config["sight_dist"], 2 * env_config["sight_width"] + 1], 1],
-        ],
-    }
-
-    checkpoint_path = args.checkpoint_path
-
-    ray.init()
-    register_env(
-        "CPRHarvestEnv-v0", lambda ray_config: HarvestEnv(env_config)
-    )
-
-    trainer = ppo.PPOTrainer(
-        env="CPRHarvestEnv-v0",
-        logger_creator=lambda cfg: UnifiedLogger(cfg, "log"),
-        config=ray_config,
-    )
-
-    recorder = HarvestRecorder(
-        trainer, env_config, run_config["heterogeneous"], checkpoint_path
-    )
-
-    recorder.record()
