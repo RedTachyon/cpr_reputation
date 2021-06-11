@@ -305,7 +305,9 @@ def tagging_values_simple_linear(
     return multiplier * reputations[prey_id]
 
 
-def tagging_values(method: str, reputations: Dict[str, float], prey_id) -> Union[float, int]:
+def tagging_values(
+    method: str, reputations: Dict[str, float], prey_id
+) -> Union[float, int]:
     """dispatch - if initialized to defaults then 0"""
     if method is None or method == "None":
         return 0.0
@@ -339,9 +341,15 @@ class HarvestGame:
         beam_dist: int = 10,
         num_crosses: int = 10,  # number of apple-crosses to start with
         ceasefire: int = 50,
-        apple_values_method: Optional[str] = None,  # reputation adjustment after gathering apple
-        tagging_values_method: Optional[str] = None,  # reputation adjustment after tagging
-        sustainability_metric: Optional[str] = None,  # how to calculate sustainability score
+        apple_values_method: Optional[
+            str
+        ] = None,  # reputation adjustment after gathering apple
+        tagging_values_method: Optional[
+            str
+        ] = None,  # reputation adjustment after tagging
+        sustainability_metric: Optional[
+            str
+        ] = None,  # how to calculate sustainability score
     ):
 
         self.num_agents = num_agents

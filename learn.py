@@ -16,6 +16,7 @@ from ray.tune.integration.wandb import WandbLoggerCallback
 from ray.tune.registry import register_env
 import yaml
 from typarse import BaseParser
+
 # import wandb
 
 from cpr_reputation.environments import HarvestEnv
@@ -46,7 +47,7 @@ class ArgParser(BaseParser):
         "checkpoint_freq": "How many training iterations between checkpoints. "
         "A value of 0 (default) disables checkpointing.",
         "checkpoint_path": "Which checkpoint to load, if any",
-        "wandb_project": "What project name in wandb?"
+        "wandb_project": "What project name in wandb?",
     }
 
 
@@ -128,7 +129,7 @@ if __name__ == "__main__":
                 project=args.wandb_project,
                 api_key_file=run_config["wandb_key_file"],
                 monitor_gym=True,
-                entity="marl-cpr"
+                entity="marl-cpr",
             )
         ],
     )
