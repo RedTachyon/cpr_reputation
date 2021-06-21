@@ -148,9 +148,7 @@ if __name__ == "__main__":
     checkpoint_path = args.checkpoint_path
 
     ray.init()
-    register_env(
-        "CPRHarvestEnv-v0", lambda ray_config: HarvestEnv(env_config)
-    )
+    register_env("CPRHarvestEnv-v0", lambda ray_config: HarvestEnv(env_config))
 
     trainer = ppo.PPOTrainer(
         env="CPRHarvestEnv-v0",

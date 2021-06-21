@@ -20,7 +20,8 @@ parser.add_argument(
     "--framework",
     choices=["tf", "tf2", "tfe", "torch"],
     default="tf",
-    help="The DL framework specifier.")
+    help="The DL framework specifier.",
+)
 parser.add_argument("--stop-iters", type=int, default=10)
 parser.add_argument("--stop-timesteps", type=int, default=10000)
 parser.add_argument("--stop-reward", type=float, default=9.0)
@@ -40,7 +41,7 @@ class CustomRenderedEnv(gym.Env, MultiAgentEnv):
         self.cur_pos = 0
         self.steps = 0
         self.action_space = Discrete(2)
-        self.observation_space = Box(0.0, 999.0, shape=(1, ), dtype=np.float32)
+        self.observation_space = Box(0.0, 999.0, shape=(1,), dtype=np.float32)
 
     def reset(self):
         self.cur_pos = 0.0
@@ -56,8 +57,7 @@ class CustomRenderedEnv(gym.Env, MultiAgentEnv):
             self.cur_pos -= 1.0
         elif action == 1:
             self.cur_pos += 1.0
-        done = self.cur_pos >= self.end_pos or \
-            self.steps >= self.max_steps
+        done = self.cur_pos >= self.end_pos or self.steps >= self.max_steps
 
         obs_dict = {"agent": [self.cur_pos]}
         done_dict = {"agent": done, "__all__": done}
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     ray.init(num_cpus=4)
     args = parser.parse_args()
 
-    obs_space = Box(0.0, 999.0, shape=(1, ), dtype=np.float32)
+    obs_space = Box(0.0, 999.0, shape=(1,), dtype=np.float32)
     act_space = Discrete(2)
 
     policies = {"shared_policy": (None, obs_space, act_space, {})}
@@ -84,10 +84,7 @@ if __name__ == "__main__":
     config = {
         # Also try common gym envs like: "CartPole-v0" or "Pendulum-v0".
         "env": CustomRenderedEnv,
-        "env_config": {
-            "corridor_length": 10,
-            "max_steps": 100,
-        },
+        "env_config": {"corridor_length": 10, "max_steps": 100},
         "multiagent": {
             "policies": policies,
             "policy_mapping_fn": (lambda agent_id: "shared_policy"),
@@ -95,7 +92,7 @@ if __name__ == "__main__":
         # Evaluate once per training iteration.
         "evaluation_interval": 1,
         # Run evaluation on (at least) two episodes
-        "evaluation_num_episodes":2,
+        "evaluation_num_episodes": 2,
         # ... using one evaluation worker (setting this to 0 will cause
         # evaluation to run on the local evaluation worker, blocking
         # training until evaluation is done).
@@ -111,7 +108,6 @@ if __name__ == "__main__":
             "record_env": "videos",
             # "record_env": "videos",
             # "record_env": "/Users/xyz/my_videos/",
-
             # Render the env while evaluating.
             # Note that this will always only render the 1st RolloutWorker's
             # env and only the 1st sub-env in a vectorized env.

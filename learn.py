@@ -49,7 +49,7 @@ class ArgParser(BaseParser):
         "config": "Path to the config of the experiment",
         "iters": "Number of training iterations",
         "checkpoint_freq": "How many training iterations between checkpoints. "
-                           "A value of 0 (default) disables checkpointing.",
+        "A value of 0 (default) disables checkpointing.",
         "checkpoint_path": "Which checkpoint to load, if any",
         "wandb_project": "What project name in wandb?",
     }
@@ -114,10 +114,7 @@ if __name__ == "__main__":
         "env": "CPRHarvestEnv-v0",
         "evaluation_interval": 1,
         "evaluation_num_workers": 1,
-        "evaluation_config": {
-            "record_env": "videos",
-            "render_env": True,
-        }
+        "evaluation_config": {"record_env": "videos", "render_env": True}
     }
 
     full_ray_config = {**ray_config, **base_ray_config}
@@ -138,7 +135,6 @@ if __name__ == "__main__":
         config=full_ray_config,
         stop={"training_iteration": iters},
         checkpoint_freq=checkpoint_freq,
-
         restore=checkpoint_path,
         # callbacks=[
         #     WandbLoggerCallback(
@@ -157,7 +153,6 @@ if __name__ == "__main__":
         env="CPRHarvestEnv-v0",
         logger_creator=lambda cfg: UnifiedLogger(cfg, "log"),
         config=full_ray_config,
-
     )
 
     recorder = HarvestRecorder(
