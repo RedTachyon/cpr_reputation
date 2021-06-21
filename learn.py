@@ -112,9 +112,9 @@ if __name__ == "__main__":
         },
         "callbacks": CPRCallbacks,
         "env": "CPRHarvestEnv-v0",
-        "evaluation_interval": 1,
-        "evaluation_num_workers": 1,
-        "evaluation_config": {"record_env": "videos", "render_env": True}
+        # "evaluation_interval": 1,
+        # "evaluation_num_workers": 1,
+        # "evaluation_config": {"record_env": "videos", "render_env": True}
     }
 
     full_ray_config = {**ray_config, **base_ray_config}
