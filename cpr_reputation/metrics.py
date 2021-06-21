@@ -67,6 +67,7 @@ class CPRCallbacks(DefaultCallbacks):
         episode.user_data["reputations_gini"] = list()
         episode.user_data["num_shots"] = list()
         episode.user_data["sustainability"] = list()
+        episode.user_data["peace"] = list()
 
     def on_episode_step(
         self,
@@ -97,6 +98,15 @@ class CPRCallbacks(DefaultCallbacks):
         )
         episode.user_data["sustainability"].append(
             sus_metric(episode.user_data["rewards"])
+        )
+        episode.user_data["peace"].append(
+            len(
+                [
+                    agent
+                    for _, agent in base_env.get_unwrapped()[0].game.agents.items()
+                    if agent.frozen > 0
+                ]
+            )
         )
 
     def on_episode_end(
@@ -133,18 +143,18 @@ class CPRCallbacks(DefaultCallbacks):
         episode.custom_metrics["reputations_gini"] = episode.user_data[
             "reputations_gini"
         ][-1]
-        episode.custom_metrics["num_shots"] = (
-            sum(
-                [
-                    sum(list(num_shots.values()))
-                    for num_shots in episode.user_data["num_shots"]
-                ]
-            )
-            / episode.length
+        episode.custom_metrics["num_shots"] = sum(
+            [
+                sum(list(num_shots.values()))
+                for num_shots in episode.user_data["num_shots"]
+            ]
         )
         episode.custom_metrics["sustainability"] = episode.user_data["sustainability"][
             -1
         ]
+        episode.custom_metrics["peace"] = (
+            sum(episode.user_data["peace"]) / episode.length
+        )
         print(
             " - ".join(
                 f"{key}={value}" for key, value in episode.custom_metrics.items()
