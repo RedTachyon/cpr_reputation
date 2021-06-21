@@ -23,10 +23,7 @@ class HarvestEnv(RayMultiAgentEnv, gym.Env):
         self.game = HarvestGame(**env_config)
 
         self.observation_space = Box(
-            0,
-            1,
-            (self.game.sight_dist, 2 * self.game.sight_width + 1, 4),
-            np.float32,
+            0, 1, (self.game.sight_dist, 2 * self.game.sight_width + 1, 4), np.float32,
         )
 
         self.action_space = Discrete(8)
@@ -97,7 +94,9 @@ class HarvestEnv(RayMultiAgentEnv, gym.Env):
                         if in_bounds(Position(i, j), size) and board[i, j] == 0:
                             board[i, j] = 4
         board[self.game.walls.astype(bool)] = 3
-        board = board.repeat(10, axis=0).repeat(10, axis=1)  # Upsample so that each cell is 10 pixels
+        board = board.repeat(10, axis=0).repeat(
+            10, axis=1
+        )  # Upsample so that each cell is 10 pixels
         board = cmap(board)
         board = (board * 255).astype(np.uint8)
         # print("RENDERING END")
@@ -195,7 +194,9 @@ class SingleHarvestEnv(gym.Env):
                         if in_bounds(Position(i, j), size) and board[i, j] == 0:
                             board[i, j] = 4
         board[self.game.walls.astype(bool)] = 3
-        board = board.repeat(10, axis=0).repeat(10, axis=1)  # Upsample so that each cell is 10 pixels
+        board = board.repeat(10, axis=0).repeat(
+            10, axis=1
+        )  # Upsample so that each cell is 10 pixels
         board = cmap(board)
         board = (board * 255).astype(np.uint8)
         # print("RENDERING END")
