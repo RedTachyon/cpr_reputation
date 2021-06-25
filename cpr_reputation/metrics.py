@@ -129,6 +129,7 @@ class CPRCallbacks(DefaultCallbacks):
             )
             / episode.length
         )
+
         episode.custom_metrics["rewards_gini"] = episode.user_data["rewards_gini"][-1]
         episode.custom_metrics["reputations"] = (
             sum(

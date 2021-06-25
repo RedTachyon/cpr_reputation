@@ -6,6 +6,9 @@ from copy import deepcopy
 
 import numpy as np
 import ray
+import wandb
+from ray.tune.logger import UnifiedLogger
+from ray.rllib.agents import ppo
 from gym.spaces import Box, Discrete
 
 # from ray.rllib.agents import ppo
@@ -21,6 +24,7 @@ from typarse import BaseParser
 
 from cpr_reputation.environments import HarvestEnv
 from cpr_reputation.metrics import CPRCallbacks
+from cpr_reputation.recording import HarvestRecorder
 
 
 class ArgParser(BaseParser):
@@ -60,11 +64,14 @@ if __name__ == "__main__":
     ray_config = config["ray_config"]
     run_config = config["run_config"]
 
-    register_env(
-        "CPRHarvestEnv-v0", lambda ray_config: HarvestEnv(env_config, ray_config)
+    wandb.init(
+        project=args.wandb_project,
+        monitor_gym=True,
+        entity="marl-cpr",
+        sync_tensorboard=True,
     )
 
-    ray_config["num_gpus"] = int(os.environ.get("RLLIB_NUM_GPUS", "0"))
+    register_env("CPRHarvestEnv-v0", lambda config: HarvestEnv(env_config))
 
     # Fill out the rest of the ray config
     walker_policy = (
@@ -93,19 +100,24 @@ if __name__ == "__main__":
             "policy_mapping_fn": lambda agent_id: "walker",
         }
 
-    ray_config["multiagent"] = multiagent
-    ray_config["model"] = {
-        "dim": 3,
-        "conv_filters": [
-            [16, [4, 4], 1],
-            [32, [env_config["sight_dist"], 2 * env_config["sight_width"] + 1], 1],
-        ],
+    base_ray_config = {
+        "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
+        "multiagent": multiagent,
+        "model": {
+            "dim": 3,
+            "conv_filters": [
+                [16, [4, 4], 1],
+                [32, [env_config["sight_dist"], 2 * env_config["sight_width"] + 1], 1],
+            ],
+        },
+        "callbacks": CPRCallbacks,
+        "env": "CPRHarvestEnv-v0",
+        # "evaluation_interval": 1,
+        # "evaluation_num_workers": 1,
+        # "evaluation_config": {"record_env": "videos", "render_env": True}
     }
 
-    ray_config["callbacks"] = CPRCallbacks
-    ray_config["env"] = "CPRHarvestEnv-v0"
-    ray_config["env_config"] = env_config
-    # ray_config["wandb"] = {"project": "quinn-workspace", "api_key_file": "WANDB_TOKEN", "monitor_gym": True}
+    full_ray_config = {**ray_config, **base_ray_config}
 
     name = args.name
     iters = args.iters
@@ -120,19 +132,36 @@ if __name__ == "__main__":
     results = tune.run(
         "PPO",
         name=name,
-        config=ray_config,
+        config=full_ray_config,
         stop={"training_iteration": iters},
         checkpoint_freq=checkpoint_freq,
         restore=checkpoint_path,
-        callbacks=[
-            WandbLoggerCallback(
-                project=args.wandb_project,
-                api_key_file=run_config["wandb_key_file"],
-                monitor_gym=True,
-                entity="marl-cpr",
-            )
-        ],
+        # callbacks=[
+        #     WandbLoggerCallback(
+        #         project=args.wandb_project,
+        #         api_key_file=run_config["wandb_key_file"],
+        #         monitor_gym=True,
+        #         entity="marl-cpr",
+        #     )
+        # ],
     )
+
+    # I
+    final_checkpoint = results.get_last_checkpoint()
+
+    trainer = ppo.PPOTrainer(
+        env="CPRHarvestEnv-v0",
+        logger_creator=lambda cfg: UnifiedLogger(cfg, "log"),
+        config=full_ray_config,
+    )
+
+    recorder = HarvestRecorder(
+        trainer, env_config, run_config["heterogeneous"], final_checkpoint
+    )
+
+    recorder.record()
+
+    wandb.log({"final_video": wandb.Video(recorder.video_path)})
 
     ray.shutdown()
 

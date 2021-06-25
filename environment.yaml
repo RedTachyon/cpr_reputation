@@ -22,8 +22,9 @@ dependencies:
     - ninja
     - pip
     - pip:
-        - ray[rllib]==1.2.0
+        - ray[rllib]==1.4.0
         - numpy==1.20.1
         - gputil
         - typarse
         - pyyaml
+        - gym==0.18.3

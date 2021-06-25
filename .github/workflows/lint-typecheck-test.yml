@@ -28,12 +28,11 @@ jobs:
                python -m pip install --upgrade pip
                pip install -r requirements.txt
                pip install -r requirements.dev.txt
-        - name: Lint with flake8
-          run: |
-               flake8
-        - name: Typecheck with Pytype
-          run: pytype cpr_reputation
         - name: Unit Test
           run: pytest test/unit
         - name: Property Test
           run: pytest test/property
+        - name: Lint with flake8
+          run: flake8
+        - name: Typecheck with Pytype
+          run: pytype cpr_reputation
