@@ -554,66 +554,76 @@ class HarvestGame:
             if other_name != agent_id and other_agent.pos.is_between(bound1, bound2)
         ]
 
-    def get_agent_obs(self, agent_id: str) -> Board:
-        agent = self.agents[agent_id]
-
+    def get_agents_obs(self) -> Dict[str, Board]:
+        # get full board
         apple_board = self.board
         agent_board = np.zeros_like(self.board)
         reputation_board = np.zeros_like(self.board)
-        for other_agent_id, other_agent in self.agents.items():
-            agent_board[other_agent.pos] = 1
-            reputation_board[other_agent.pos] = softmax_dict(
-                self.reputation, other_agent_id
-            )
+        for agent_id, agent in self.agents.items():
+            agent_board[agent.pos] = 1
+            reputation_board[agent.pos] = softmax_dict(self.reputation, agent_id)
         wall_board = self.walls
 
-        # Add any extra layers before this line
-
+        # add any extra layers before this line
         full_board = np.stack(
             [apple_board, agent_board, wall_board, reputation_board], axis=-1
         )  # H x W x 4
-        rot = agent.rot
 
-        # Rotate the board so that the agent is always pointing up.
-        # I checked, the direction should be correct - still tests, will be good
-        board = np.rot90(full_board, rot)
+        # for each agent, get the appopriate slice
+        agents_obs = {}
+        for (agent_id, agent) in self.agents.items():
+            rot = agent.rot
 
-        max_i, max_j = board.shape[:2]
+            # Rotate the board so that the agent is always pointing up.
+            # I checked, the direction should be correct - still tests, will be good
+            board = np.rot90(full_board, rot)
 
-        if rot == 0:
-            agent_i, agent_j = agent.pos
-        elif rot == 1:
-            agent_i, agent_j = max_i - agent.pos[1] - 1, agent.pos[0]
-        elif rot == 2:
-            agent_i, agent_j = max_i - agent.pos[0] - 1, max_j - agent.pos[1] - 1
-        else:
-            agent_i, agent_j = agent.pos[1], max_j - agent.pos[0] - 1
+            max_i, max_j = board.shape[:2]
 
-        # Horizontal bounds
-        bounds_i = (agent_i - self.sight_dist + 1, agent_i + 1)
-        (bound_up, bound_down) = bounds_i
-        bounds_i_clipped = np.clip(bounds_i, 0, board.shape[0])
+            if rot == 0:
+                agent_i, agent_j = agent.pos
+            elif rot == 1:
+                agent_i, agent_j = max_i - agent.pos[1] - 1, agent.pos[0]
+            elif rot == 2:
+                agent_i, agent_j = max_i - agent.pos[0] - 1, max_j - agent.pos[1] - 1
+            else:
+                agent_i, agent_j = agent.pos[1], max_j - agent.pos[0] - 1
 
-        bounds_j = (agent_j - self.sight_width, agent_j + self.sight_width + 1)
-        (bound_left, bound_right) = bounds_j
-        bounds_j_clipped = np.clip(bounds_j, 0, board.shape[1])
+            # Horizontal bounds
+            bounds_i = (agent_i - self.sight_dist + 1, agent_i + 1)
+            (bound_up, bound_down) = bounds_i
+            bounds_i_clipped = np.clip(bounds_i, 0, board.shape[0])
 
-        base_slice = board[
-            slice(*bounds_i_clipped), slice(*bounds_j_clipped)
-        ]  # <= (H, W)
+            bounds_j = (agent_j - self.sight_width, agent_j + self.sight_width + 1)
+            (bound_left, bound_right) = bounds_j
+            bounds_j_clipped = np.clip(bounds_j, 0, board.shape[1])
 
-        if bound_up < 0:
-            padding = np.zeros((-bound_up, base_slice.shape[1], base_slice.shape[2]))
-            base_slice = np.concatenate([padding, base_slice], axis=0)
-        if bound_left < 0:
-            padding = np.zeros((base_slice.shape[0], -bound_left, base_slice.shape[2]))
-            base_slice = np.concatenate([padding, base_slice], axis=1)
-        if bound_right > max_j:  # board.shape[1]:
-            padding = np.zeros(
-                (base_slice.shape[0], bound_right - board.shape[1], base_slice.shape[2])
-            )
-            base_slice = np.concatenate([base_slice, padding], axis=1)
-        if bound_down > board.shape[0]:
-            raise ValueError("WTF")
+            base_slice = board[
+                slice(*bounds_i_clipped), slice(*bounds_j_clipped)
+            ]  # <= (H, W)
 
-        return base_slice  # H x W x 4
+            if bound_up < 0:
+                padding = np.zeros(
+                    (-bound_up, base_slice.shape[1], base_slice.shape[2])
+                )
+                base_slice = np.concatenate([padding, base_slice], axis=0)
+            if bound_left < 0:
+                padding = np.zeros(
+                    (base_slice.shape[0], -bound_left, base_slice.shape[2])
+                )
+                base_slice = np.concatenate([padding, base_slice], axis=1)
+            if bound_right > max_j:  # board.shape[1]:
+                padding = np.zeros(
+                    (
+                        base_slice.shape[0],
+                        bound_right - board.shape[1],
+                        base_slice.shape[2],
+                    )
+                )
+                base_slice = np.concatenate([base_slice, padding], axis=1)
+            if bound_down > board.shape[0]:
+                raise ValueError("WTF")
+
+            agents_obs[agent_id] = base_slice  # H x W x 4
+
+        return agents_obs

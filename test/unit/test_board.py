@@ -114,23 +114,23 @@ def test_get_neighbors_radius_2():
         assert pos in neighbors
 
 
-def test_get_agent_obs_board_shape():
+def test_get_agents_obs_board_shape():
     env = HarvestGame(
         size=Position(100, 100), num_agents=1, sight_dist=20, sight_width=10
     )
     env.agents["Agent0"].rot = 0  # facing north
-    assert env.get_agent_obs("Agent0").shape == (20, 21, 4)
+    assert env.get_agents_obs()["Agent0"].shape == (20, 21, 4)
     env.agents["Agent0"].rot = 1  # facing east
-    assert env.get_agent_obs("Agent0").shape == (20, 21, 4)
+    assert env.get_agents_obs()["Agent0"].shape == (20, 21, 4)
     env.agents["Agent0"].rot = 2  # facing south
-    assert env.get_agent_obs("Agent0").shape == (20, 21, 4)
+    assert env.get_agents_obs()["Agent0"].shape == (20, 21, 4)
     env.agents["Agent0"].rot = 3  # facing west
-    assert env.get_agent_obs("Agent0").shape == (20, 21, 4)
+    assert env.get_agents_obs()["Agent0"].shape == (20, 21, 4)
 
 
-def test_get_agent_obs_board_items(example_env1):
+def test_get_agents_obs_board_items(example_env1):
     env = example_env1
-    obs = env.get_agent_obs("Agent3")  # facing south
+    obs = env.get_agents_obs()["Agent3"]  # facing south
     obs_apples = np.where(obs[:, :, 0])
     obs_agents = np.where(obs[:, :, 1])
     obs_walls = np.where(obs[:, :, 2])
@@ -158,7 +158,7 @@ def test_get_agent_obs_board_items(example_env1):
     assert sorted(zip(*obs_walls)) == sorted(expected_walls)
 
     env._rotate_agent("Agent3", -1)  # facing east
-    obs = env.get_agent_obs("Agent3")
+    obs = env.get_agents_obs()["Agent3"]
     obs_apples = np.where(obs[:, :, 0])
     obs_agents = np.where(obs[:, :, 1])
     obs_walls = np.where(obs[:, :, 2])
@@ -197,7 +197,7 @@ def test_get_agent_obs_board_items(example_env1):
     # assert sorted(zip(*obs_walls)) == sorted(expected_walls)
 
     env._rotate_agent("Agent3", -1)  # facing north
-    obs = env.get_agent_obs("Agent3")
+    obs = env.get_agents_obs()["Agent3"]
     obs_apples = np.where(obs[:, :, 0])
     obs_agents = np.where(obs[:, :, 1])
     obs_walls = np.where(obs[:, :, 2])
@@ -220,7 +220,7 @@ def test_get_agent_obs_board_items(example_env1):
     # assert sorted(zip(*obs_walls)) == sorted(expected_walls)
 
     env._rotate_agent("Agent3", -1)  # facing west
-    obs = env.get_agent_obs("Agent3")
+    obs = env.get_agents_obs()["Agent3"]
     obs_apples = np.where(obs[:, :, 0])
     obs_agents = np.where(obs[:, :, 1])
     obs_walls = np.where(obs[:, :, 2])
