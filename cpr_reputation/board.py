@@ -561,9 +561,7 @@ class HarvestGame:
         reputation_board = np.zeros_like(self.board)
         for agent_id, agent in self.agents.items():
             agent_board[agent.pos] = 1
-            reputation_board[agent.pos] = softmax_dict(
-                self.reputation, agent_id
-            )
+            reputation_board[agent.pos] = softmax_dict(self.reputation, agent_id)
         wall_board = self.walls
 
         # add any extra layers before this line
@@ -573,7 +571,7 @@ class HarvestGame:
 
         # for each agent, get the appopriate slice
         agents_obs = {}
-        for (agent_id, agent) in self.agents():
+        for (agent_id, agent) in self.agents.items():
             rot = agent.rot
 
             # Rotate the board so that the agent is always pointing up.
@@ -605,14 +603,22 @@ class HarvestGame:
             ]  # <= (H, W)
 
             if bound_up < 0:
-                padding = np.zeros((-bound_up, base_slice.shape[1], base_slice.shape[2]))
+                padding = np.zeros(
+                    (-bound_up, base_slice.shape[1], base_slice.shape[2])
+                )
                 base_slice = np.concatenate([padding, base_slice], axis=0)
             if bound_left < 0:
-                padding = np.zeros((base_slice.shape[0], -bound_left, base_slice.shape[2]))
+                padding = np.zeros(
+                    (base_slice.shape[0], -bound_left, base_slice.shape[2])
+                )
                 base_slice = np.concatenate([padding, base_slice], axis=1)
             if bound_right > max_j:  # board.shape[1]:
                 padding = np.zeros(
-                    (base_slice.shape[0], bound_right - board.shape[1], base_slice.shape[2])
+                    (
+                        base_slice.shape[0],
+                        bound_right - board.shape[1],
+                        base_slice.shape[2],
+                    )
                 )
                 base_slice = np.concatenate([base_slice, padding], axis=1)
             if bound_down > board.shape[0]:
@@ -620,4 +626,4 @@ class HarvestGame:
 
             agents_obs[agent_id] = base_slice  # H x W x 4
 
-        return agents_obs  
+        return agents_obs
