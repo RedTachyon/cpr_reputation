@@ -49,13 +49,13 @@ class HarvestRecorder(HarvestEnv):
             if self.heterogeneous:
                 for agent_id, _ in self.game.agents.items():
                     actions[agent_id] = self.trainer.compute_action(
-                        observation=self.game.get_agent_obs(agent_id),
+                        observation=self.game.get_agent_obs()[agent_id],
                         policy_id=agent_id,
                     )
             else:
                 for agent_id, _ in self.game.agents.items():
                     actions[agent_id] = self.trainer.compute_action(
-                        observation=self.game.get_agent_obs(agent_id),
+                        observation=self.game.get_agents_obs()[agent_id],
                         policy_id="walker",
                     )
 

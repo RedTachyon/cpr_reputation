@@ -123,7 +123,7 @@ class SingleHarvestEnv(gym.Env):
         self.last_actions = {}
 
         obs = {
-            agent_id: self.game.get_agent_obs(agent_id)
+            agent_id: self.game.get_agents_obs()[agent_id]
             for agent_id, _ in self.game.agents.items()
         }
 
@@ -138,7 +138,7 @@ class SingleHarvestEnv(gym.Env):
 
         # get observations, done, info
         obs = {
-            agent_id: self.game.get_agent_obs(agent_id)
+            agent_id: self.game.get_agents_obs()[agent_id]
             for agent_id, _ in self.game.agents.items()
         }
 
