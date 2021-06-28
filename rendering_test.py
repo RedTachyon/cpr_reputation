@@ -28,8 +28,7 @@ parser.add_argument("--stop-reward", type=float, default=9.0)
 
 
 class CustomRenderedEnv(gym.Env, MultiAgentEnv):
-    """Example of a custom env, for which you can specify rendering behavior.
-    """
+    """Example of a custom env, for which you can specify rendering behavior."""
 
     metadata = {
         "render.modes": ["rgb_array"],
