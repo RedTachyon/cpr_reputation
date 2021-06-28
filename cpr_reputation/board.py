@@ -557,8 +557,8 @@ class HarvestGame:
     def get_agents_obs(self) -> Dict[str, Board]:
         # get full board
         apple_board = self.board
-        agent_board = np.zeros_like(self.board)
-        reputation_board = np.zeros_like(self.board)
+        agent_board = np.zeros_like(self.board, dtype=float)
+        reputation_board = np.zeros_like(self.board, dtype=float)
         for agent_id, agent in self.agents.items():
             agent_board[agent.pos] = 1
             reputation_board[agent.pos] = self.reputation[
