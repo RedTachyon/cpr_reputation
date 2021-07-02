@@ -69,6 +69,7 @@ if __name__ == "__main__":
         monitor_gym=True,
         entity="marl-cpr",
         sync_tensorboard=True,
+        config=config
     )
 
     register_env("CPRHarvestEnv-v0", lambda config: HarvestEnv(env_config))
