@@ -45,7 +45,7 @@ defaults_ini = {
 walker1 = (
     None,
     Box(
-        -1.0,
+        0.0,
         1.0,
         (defaults_ini["sight_dist"], 2 * defaults_ini["sight_width"] + 1, 3),
         np.float32,

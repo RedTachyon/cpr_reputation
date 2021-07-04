@@ -78,7 +78,7 @@ if __name__ == "__main__":
     walker_policy = (
         None,
         Box(
-            -1.0,
+            0.0,
             1.0,
             (env_config["sight_dist"], 2 * env_config["sight_width"] + 1, 4),
             np.float32,
