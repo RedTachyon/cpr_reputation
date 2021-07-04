@@ -363,11 +363,5 @@ def test_regenerate_apples_with_step():
 def test_apple_values_subtractive():
     np.random.seed(0)
     env1 = HarvestGame(num_agents=2, size=Position(10, 10))
-    assert (
-        apple_values("subtractive", env1.board, position=Position(7, 3))
-        == 8/12
-    )
-    assert (
-        apple_values("subtractive", env1.board, position=Position(1, 0))
-        == 11/12
-    )
+    assert apple_values("subtractive", env1.board, position=Position(7, 3)) == 8 / 12
+    assert apple_values("subtractive", env1.board, position=Position(1, 0)) == 11 / 12
