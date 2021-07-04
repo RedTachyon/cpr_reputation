@@ -365,9 +365,9 @@ def test_apple_values_subtractive():
     env1 = HarvestGame(num_agents=2, size=Position(10, 10))
     assert (
         apple_values("subtractive", env1.board, position=Position(7, 3))
-        == 8.0
+        == 8/12
     )
     assert (
         apple_values("subtractive", env1.board, position=Position(1, 0))
-        == 11.0
+        == 11/12
     )
