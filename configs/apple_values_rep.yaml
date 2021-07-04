@@ -6,7 +6,7 @@ env_config:
   sight_dist: 10
   num_crosses: 45
   ceasefire: 0
-  apple_values_method: subtractive
+  apple_values_method: inverse
   tagging_values_method: 
   sustainability_metric: deepmind
 ray_config:

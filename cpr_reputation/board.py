@@ -283,6 +283,15 @@ def apple_values_subtractive(
     return (num_neighbors - neighbor_apple_sums[tuple(position)]) / num_neighbors
 
 
+def apple_values_inverse(
+    board: Board, position: Position
+) -> float:
+    kernel = NEIGHBOR_KERNEL
+    neighbor_apple_sums = convolve(board, kernel, mode="constant")
+    return 1 / (1 + neighbor_apple_sums)
+
+
+
 def apple_values(method: str, board: Board, **kwargs) -> Union[float, int]:
     """dispatch - defaults to 0 if method is none"""
     if method is None or method == "None":
@@ -291,6 +300,8 @@ def apple_values(method: str, board: Board, **kwargs) -> Union[float, int]:
         return apple_values_subtractive(board, **kwargs)
     if method == "ternary":
         return apple_values_ternary(board, **kwargs)
+    if method == "inverse":
+        return apple_values_inverse(board, **kwargs)
     raise ValueError(f"Improper apple value argument {method}")
 
 
