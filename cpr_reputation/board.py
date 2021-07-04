@@ -274,12 +274,13 @@ def apple_values_ternary(board: Board, position: Position) -> int:
 
 
 def apple_values_subtractive(
-    board: Board, position: Position, factor: float = 1.0
+    board: Board, position: Position
 ) -> float:
     """reputational magnitude of taking an apple is inversely proportional to the number of apples around it"""
     kernel = NEIGHBOR_KERNEL
+    num_neighbors = kernel.sum()
     neighbor_apple_sums = convolve(board, kernel, mode="constant")
-    return (kernel.sum() - neighbor_apple_sums[tuple(position)]) / factor
+    return (num_neighbors - neighbor_apple_sums[tuple(position)]) / num_neighbors
 
 
 def apple_values(method: str, board: Board, **kwargs) -> Union[float, int]:
@@ -506,8 +507,8 @@ class HarvestGame:
                 self.apple_values_method,
                 self.board,
                 position=current_pos,
-                factor=NEIGHBOR_KERNEL.sum(),
             )
+            self.reputation[agent_id] = np.clip(self.reputation[agent_id], -1000, 1000)
             return 1.0
         else:  # no apple in new cell
             return 0.0
