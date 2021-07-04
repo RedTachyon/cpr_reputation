@@ -64,7 +64,6 @@ class CPRCallbacks(DefaultCallbacks):
         episode.user_data["rewards_dict"] = defaultdict(float)
         episode.user_data["rewards_gini"] = list()
         episode.user_data["reputations"] = list()
-        episode.user_data["reputations_gini"] = list()
         episode.user_data["num_shots"] = list()
         episode.user_data["sustainability"] = list()
         episode.user_data["peace"] = list()
@@ -91,7 +90,6 @@ class CPRCallbacks(DefaultCallbacks):
             gini_coef(episode.user_data["rewards_dict"])
         )
         episode.user_data["reputations"].append(reputations)
-        episode.user_data["reputations_gini"].append(gini_coef(reputations))
         episode.user_data["num_shots"].append(num_shots)
         sus_metric = sustainability_metric(
             base_env.get_unwrapped()[0].game.sustainability_metric
@@ -140,9 +138,6 @@ class CPRCallbacks(DefaultCallbacks):
             )
             / episode.length
         )
-        episode.custom_metrics["reputations_gini"] = episode.user_data[
-            "reputations_gini"
-        ][-1]
         episode.custom_metrics["num_shots"] = sum(
             [
                 sum(list(num_shots.values()))
