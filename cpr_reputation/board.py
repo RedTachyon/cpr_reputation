@@ -273,9 +273,7 @@ def apple_values_ternary(board: Board, position: Position) -> int:
     return cache[position]
 
 
-def apple_values_subtractive(
-    board: Board, position: Position
-) -> float:
+def apple_values_subtractive(board: Board, position: Position) -> float:
     """reputational magnitude of taking an apple is inversely proportional to the number of apples around it"""
     kernel = NEIGHBOR_KERNEL
     num_neighbors = kernel.sum()
@@ -283,13 +281,10 @@ def apple_values_subtractive(
     return (num_neighbors - neighbor_apple_sums[tuple(position)]) / num_neighbors
 
 
-def apple_values_inverse(
-    board: Board, position: Position
-) -> float:
+def apple_values_inverse(board: Board, position: Position) -> float:
     kernel = NEIGHBOR_KERNEL
     neighbor_apple_sums = convolve(board, kernel, mode="constant")
-    return 1 / (1 + neighbor_apple_sums)
-
+    return 1 / (1 + neighbor_apple_sums[tuple(position)])
 
 
 def apple_values(method: str, board: Board, **kwargs) -> Union[float, int]:
