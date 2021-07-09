@@ -79,8 +79,8 @@ def retrieve_checkpoint(
 
 
 def softmax_dict(reputation: Dict[str, float], agent_id: str) -> float:
-    reputations = np.array(list(reputation.values()))
-    return np.exp(reputation[agent_id]) / np.exp(reputations).sum()
+    reputations = np.array(list(reputation.values())) / 1000
+    return np.exp(reputation[agent_id] / 1000) / np.exp(reputations).sum()
 
 
 # def get_config(

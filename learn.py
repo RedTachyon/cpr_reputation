@@ -69,7 +69,7 @@ if __name__ == "__main__":
         monitor_gym=True,
         entity="marl-cpr",
         sync_tensorboard=True,
-        config=config
+        config=config,
     )
 
     register_env("CPRHarvestEnv-v0", lambda config: HarvestEnv(env_config))
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     walker_policy = (
         None,
         Box(
-            0.0,
+            -1.0,
             1.0,
             (env_config["sight_dist"], 2 * env_config["sight_width"] + 1, 4),
             np.float32,

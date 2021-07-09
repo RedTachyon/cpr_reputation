@@ -179,9 +179,10 @@ def random_board(size: Tuple[int, int], prob: float = 0.1) -> Board:
     return (prob_map < prob).astype(np.int8)
 
 
-def random_crosses(size: Position, num_crosses: int = 10) -> Board:
+def random_crosses(size: Position, num_crosses: int = 10, seed: int = 1) -> Board:
     """Creates a board with random cross-shaped apple patterns"""
     all_positions = [(row, col) for col in range(size[1]) for row in range(size[0])]
+    np.random.seed(seed)
     random_idx = np.random.choice(range(len(all_positions)), num_crosses, replace=False)
     initial_apples = [all_positions[i] for i in random_idx]
     board = create_board(size, initial_apples)
@@ -273,13 +274,18 @@ def apple_values_ternary(board: Board, position: Position) -> int:
     return cache[position]
 
 
-def apple_values_subtractive(
-    board: Board, position: Position, factor: float = 1.0
-) -> float:
+def apple_values_subtractive(board: Board, position: Position) -> float:
     """reputational magnitude of taking an apple is inversely proportional to the number of apples around it"""
     kernel = NEIGHBOR_KERNEL
+    num_neighbors = kernel.sum()
     neighbor_apple_sums = convolve(board, kernel, mode="constant")
-    return (kernel.sum() - neighbor_apple_sums[tuple(position)]) / factor
+    return (num_neighbors - neighbor_apple_sums[tuple(position)]) / num_neighbors
+
+
+def apple_values_inverse(board: Board, position: Position) -> float:
+    kernel = NEIGHBOR_KERNEL
+    neighbor_apple_sums = convolve(board, kernel, mode="constant")
+    return 1 / (1 + neighbor_apple_sums[tuple(position)])
 
 
 def apple_values(method: str, board: Board, **kwargs) -> Union[float, int]:
@@ -290,6 +296,8 @@ def apple_values(method: str, board: Board, **kwargs) -> Union[float, int]:
         return apple_values_subtractive(board, **kwargs)
     if method == "ternary":
         return apple_values_ternary(board, **kwargs)
+    if method == "inverse":
+        return apple_values_inverse(board, **kwargs)
     raise ValueError(f"Improper apple value argument {method}")
 
 
@@ -506,8 +514,8 @@ class HarvestGame:
                 self.apple_values_method,
                 self.board,
                 position=current_pos,
-                factor=NEIGHBOR_KERNEL.sum(),
             )
+            self.reputation[agent_id] = np.clip(self.reputation[agent_id], -1000, 1000)
             return 1.0
         else:  # no apple in new cell
             return 0.0
@@ -561,9 +569,7 @@ class HarvestGame:
         reputation_board = np.zeros_like(self.board)
         for agent_id, agent in self.agents.items():
             agent_board[agent.pos] = 1
-            reputation_board[agent.pos] = self.reputation[
-                agent_id
-            ]  # softmax_dict(self.reputation, agent_id)
+            reputation_board[agent.pos] = self.reputation[agent_id] / 1000
         wall_board = self.walls
 
         # add any extra layers before this line
