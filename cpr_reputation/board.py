@@ -179,10 +179,10 @@ def random_board(size: Tuple[int, int], prob: float = 0.1) -> Board:
     return (prob_map < prob).astype(np.int8)
 
 
-def random_crosses(size: Position, num_crosses: int = 10) -> Board:
+def random_crosses(size: Position, num_crosses: int = 10, seed=1) -> Board:
     """Creates a board with random cross-shaped apple patterns"""
     all_positions = [(row, col) for col in range(size[1]) for row in range(size[0])]
-    random_idx = np.random.choice(range(len(all_positions)), num_crosses, replace=False)
+    random_idx = np.random.choice(range(len(all_positions)), num_crosses, replace=False, seed=seed)
     initial_apples = [all_positions[i] for i in random_idx]
     board = create_board(size, initial_apples)
     return board
