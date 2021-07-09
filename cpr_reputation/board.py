@@ -568,7 +568,7 @@ class HarvestGame:
         reputation_board = np.zeros_like(self.board)
         for agent_id, agent in self.agents.items():
             agent_board[agent.pos] = 1
-            reputation_board[agent.pos] = softmax_dict(self.reputation, agent_id)
+            reputation_board[agent.pos] = self.reputation[agent_id] / 1000
         wall_board = self.walls
 
         # add any extra layers before this line
