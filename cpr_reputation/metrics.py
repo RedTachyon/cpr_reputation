@@ -102,7 +102,7 @@ class CPRCallbacks(DefaultCallbacks):
                 [
                     agent
                     for _, agent in base_env.get_unwrapped()[0].game.agents.items()
-                    if agent.frozen > 0
+                    if agent.frozen == 0
                 ]
             )
         )
