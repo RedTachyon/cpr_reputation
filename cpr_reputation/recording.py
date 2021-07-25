@@ -16,7 +16,7 @@ class HarvestRecorder(HarvestEnv):
         trainer,
         env_config: dict,
         heterogeneous: bool,
-        checkpoint_path: str = None,
+        checkpoint_path: Optional[str] = None,
     ):
         super().__init__(env_config)
 
