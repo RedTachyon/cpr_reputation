@@ -3,6 +3,7 @@ from cpr_reputation.environments import HarvestEnv
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import animation
+from typing import Optional
 
 from cpr_reputation.utils import SHOOT
 
@@ -33,7 +34,7 @@ class HarvestRecorder(HarvestEnv):
                 f"Not loading any checkpoint at all, tried checkpoint {checkpoint_path}"
             )
 
-    def record(self, filename: str = None):
+    def record(self, filename: Optional[str] = None):
         """Records a video of the loaded checkpoint."""
 
         if filename is None:
