@@ -1,7 +1,7 @@
 ---
 env_config:
   num_agents: 1
-  size: !!python/tuple [26, 9]
+  size: !!python/tuple [9, 26]
   sight_width: 5
   sight_dist: 10
   num_crosses: 9
