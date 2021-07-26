@@ -313,6 +313,10 @@ def tagging_values_simple_linear(
     return multiplier * reputations[prey_id]
 
 
+def tagging_values_constant(constant: int = -1.0) -> float:
+    return constant
+
+
 def tagging_values(
     method: str, reputations: Dict[str, float], prey_id
 ) -> Union[float, int]:
@@ -323,6 +327,8 @@ def tagging_values(
         return tagging_values_simple_linear(reputations, prey_id)
     if method == "z_score":
         return tagging_values_z_score(reputations, prey_id)
+    if method == "constant":
+        return tagging_values_constant()
     raise ValueError(f"Improper tagging value argument {method}")
 
 
@@ -569,7 +575,7 @@ class HarvestGame:
         reputation_board = np.zeros_like(self.board)
         for agent_id, agent in self.agents.items():
             agent_board[agent.pos] = 1
-            reputation_board[agent.pos] = self.reputation[agent_id] / 1000
+            reputation_board[agent.pos] = self.reputation[agent_id] / 1000.0
         wall_board = self.walls
 
         # add any extra layers before this line

@@ -7,7 +7,7 @@ env_config:
   num_crosses: 45
   ceasefire: 0
   apple_values_method: inverse
-  tagging_values_method: 
+  tagging_values_method: constant
   sustainability_metric: deepmind
 ray_config:
   framework: torch
