@@ -313,7 +313,7 @@ def tagging_values_simple_linear(
     return multiplier * reputations[prey_id]
 
 
-def tagging_values_constant(constant: int = -1.0) -> float:
+def tagging_values_constant(constant: float = -1.0) -> float:
     return constant
 
 
