@@ -506,6 +506,7 @@ class HarvestGame:
                 self.reputation[agent_id] += tagging_values(
                     self.tagging_values_method, reputations, _agent_id
                 )
+                self.reputation[agent_id] = np.clip(self.reputation[agent_id], -1000, 1000)
         elif action == NOOP:
             # No-op
             return 0.0
